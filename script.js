@@ -172,6 +172,9 @@ let currentMode = "guide";
 let pending = false;
 let selectedGraphNode = "brand";
 
+const modeGrid = document.querySelector("#modeGrid");
+const mainPanel = document.querySelector("#mainPanel");
+const tracePanel = document.querySelector("#tracePanel");
 const modeCards = document.querySelectorAll(".mode-card");
 const navItems = document.querySelectorAll(".nav-item");
 const pageTitle = document.querySelector("#pageTitle");
@@ -191,7 +194,11 @@ function setMode(mode) {
   currentMode = mode;
   const data = modes[mode];
   const isInsight = data.type === "insight";
+  const isKnowledgeSimulation = ["guide", "chatbot", "geo"].includes(mode);
 
+  modeGrid.hidden = !isKnowledgeSimulation;
+  mainPanel.classList.toggle("single-module", isInsight);
+  tracePanel.hidden = isInsight;
   modeCards.forEach((card) => card.classList.toggle("active", card.dataset.mode === mode));
   navItems.forEach((item) => item.classList.toggle("active", item.textContent.trim() === navLabelForMode(mode)));
   pageTitle.textContent = data.title;

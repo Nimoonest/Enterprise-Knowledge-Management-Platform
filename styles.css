@@ -475,12 +475,7 @@ h1 {
     white-space: normal;
   }
 }
-
-.mode-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-
-.mode-icon.blue {
+`n.mode-icon.blue {
   color: var(--blue);
   background: var(--blue-soft);
 }
@@ -900,4 +895,20 @@ h1 {
   .graph-canvas {
     min-height: 620px;
   }
+}
+
+.main-panel.single-module {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.main-panel.single-module .chat-panel {
+  min-height: 680px;
+}
+
+.mode-grid[hidden],
+.trace-panel[hidden],
+.composer[hidden],
+.conversation[hidden],
+.insight-workspace[hidden] {
+  display: none !important;
 }

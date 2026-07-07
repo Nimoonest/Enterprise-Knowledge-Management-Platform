@@ -18,7 +18,7 @@
 
       <nav class="nav">
         <div class="nav-group">知识质量</div>
-        <button class="nav-item active">知识库</button>
+        <button class="nav-item">知识库</button>
         <button class="nav-item">知识覆盖</button>
         <button class="nav-item">禁词管理</button>
         <div class="nav-group">测试与验证</div>
@@ -47,7 +47,7 @@
         </div>
       </header>
 
-      <section class="mode-grid" aria-label="功能入口">
+      <section class="mode-grid" id="modeGrid" aria-label="知识模拟入口">
         <button class="mode-card active" data-mode="guide">
           <span class="mode-icon orange">▣</span>
           <span class="mode-title">AI 导购模拟</span>
@@ -69,23 +69,9 @@
           <span class="mode-desc">结构化提取产品摘要，检查内容完整性和 AI 搜索可读性。</span>
           <span class="mode-foot">适用知识：GEO 字段、结构化摘要、风险边界</span>
         </button>
-        <button class="mode-card" data-mode="map">
-          <span class="mode-icon blue">▦</span>
-          <span class="mode-title">知识地图</span>
-          <span class="mode-badge blue">资产视图</span>
-          <span class="mode-desc">按业务入口、知识域和覆盖度展示知识库结构。</span>
-          <span class="mode-foot">适用知识：产品矩阵、FAQ、导购规则、GEO 字段</span>
-        </button>
-        <button class="mode-card" data-mode="graph">
-          <span class="mode-icon teal">⌘</span>
-          <span class="mode-title">知识图谱</span>
-          <span class="mode-badge teal">关系网络</span>
-          <span class="mode-desc">展示品牌、产品、场景、规则和风险边界之间的关系。</span>
-          <span class="mode-foot">适用知识：实体、关系、引用段落、应用入口</span>
-        </button>
       </section>
 
-      <section class="main-panel">
+      <section class="main-panel" id="mainPanel">
         <div class="chat-panel">
           <div class="panel-head">
             <div>
@@ -106,7 +92,7 @@
           </form>
         </div>
 
-        <aside class="trace-panel">
+        <aside class="trace-panel" id="tracePanel">
           <div class="panel-head compact">
             <div>
               <h2>知识溯源</h2>
