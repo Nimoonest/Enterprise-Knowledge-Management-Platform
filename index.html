@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>企业知识库 Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar" aria-label="功能导航">
+      <div class="brand">
+        <div class="brand-mark">潘</div>
+        <div>
+          <div class="brand-name">潘婷知识库</div>
+          <div class="brand-subtitle">企业 RAG Demo</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-group">知识质量</div>
+        <button class="nav-item active">知识库</button>
+        <button class="nav-item">知识覆盖</button>
+        <button class="nav-item">禁词管理</button>
+        <div class="nav-group">测试与验证</div>
+        <button class="nav-item">知识模拟</button>
+        <button class="nav-item">质量巡检</button>
+        <button class="nav-item">召回测试</button>
+        <div class="nav-group">监控与洞察</div>
+        <button class="nav-item">效果度量</button>
+        <button class="nav-item">知识溯源</button>
+      </nav>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <h1>知识模拟</h1>
+          <p>同一份潘婷测试知识库，按不同业务目标切换 Prompt 与输出格式。</p>
+        </div>
+        <div class="status">
+          <span class="dot"></span>
+          <span>OpenAI GPT-4o mini</span>
+          <span class="divider"></span>
+          <span>潘婷测试知识库</span>
+        </div>
+      </header>
+
+      <section class="mode-grid" aria-label="功能入口">
+        <button class="mode-card active" data-mode="guide">
+          <span class="mode-icon orange">▣</span>
+          <span class="mode-title">AI 导购模拟</span>
+          <span class="mode-badge">电商触点</span>
+          <span class="mode-desc">按发质、场景与需求推荐产品组合，适合验证导购话术。</span>
+          <span class="mode-foot">适用知识：商品知识、场景知识、导购规则</span>
+        </button>
+        <button class="mode-card" data-mode="chatbot">
+          <span class="mode-icon green">◌</span>
+          <span class="mode-title">AI Chatbot 模拟</span>
+          <span class="mode-badge green">官方客服</span>
+          <span class="mode-desc">面向 FAQ、产品说明和风险提示，验证客服问答准确性。</span>
+          <span class="mode-foot">适用知识：FAQ、商品属性、风险提示</span>
+        </button>
+        <button class="mode-card" data-mode="geo">
+          <span class="mode-icon purple">◎</span>
+          <span class="mode-title">GEO 内容检验</span>
+          <span class="mode-badge purple">AI 搜索</span>
+          <span class="mode-desc">结构化提取产品摘要，检查内容完整性和 AI 搜索可读性。</span>
+          <span class="mode-foot">适用知识：GEO 字段、结构化摘要、风险边界</span>
+        </button>
+      </section>
+
+      <section class="main-panel">
+        <div class="chat-panel">
+          <div class="panel-head">
+            <div>
+              <h2 id="panelTitle">AI 导购模拟</h2>
+              <p id="panelSubtitle">输入用户需求，模拟电商导购式回答。</p>
+            </div>
+            <button class="icon-button" id="resetButton" title="重置">↻</button>
+          </div>
+
+          <div class="quick-row" id="quickPrompts"></div>
+
+          <div class="conversation" id="conversation" aria-live="polite"></div>
+
+          <form class="composer" id="composer">
+            <input id="questionInput" type="text" autocomplete="off" />
+            <button type="submit">发送</button>
+          </form>
+        </div>
+
+        <aside class="trace-panel">
+          <div class="panel-head compact">
+            <div>
+              <h2>知识溯源</h2>
+              <p>模拟 MaxKB 检索命中结果。</p>
+            </div>
+          </div>
+          <div class="trace-list" id="traceList"></div>
+          <div class="score-box">
+            <div>
+              <span>质量评分</span>
+              <strong id="qualityScore">92</strong>
+            </div>
+            <div class="meter">
+              <span id="qualityBar"></span>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
