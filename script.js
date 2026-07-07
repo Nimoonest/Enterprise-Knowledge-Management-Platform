@@ -1,5 +1,6 @@
-﻿const modes = {
+const modes = {
   guide: {
+    type: "chat",
     appId: "45fa5cf6-79d2-11f1-8c78-56920ea5d652",
     appName: "AI导购模拟",
     title: "AI 导购模拟",
@@ -12,6 +13,7 @@
     ],
   },
   chatbot: {
+    type: "chat",
     appId: "45fd80ca-79d2-11f1-8c78-56920ea5d652",
     appName: "AI Chatbot模拟",
     title: "AI Chatbot 模拟",
@@ -24,6 +26,7 @@
     ],
   },
   geo: {
+    type: "chat",
     appId: "460029d8-79d2-11f1-8c78-56920ea5d652",
     appName: "GEO内容检验",
     title: "GEO 内容检验",
@@ -35,7 +38,129 @@
       "输出产品核心字段和内容完整性评分",
     ],
   },
+  map: {
+    type: "insight",
+    title: "知识地图",
+    subtitle: "把潘婷测试知识库按业务目标、知识域和覆盖度展开，适合向业务方说明知识资产结构。",
+    prompts: ["查看业务入口", "查看知识域覆盖", "查看待补强区域"],
+  },
+  graph: {
+    type: "insight",
+    title: "知识图谱",
+    subtitle: "把品牌、产品、场景、规则、FAQ 与风险边界串成实体关系网络，适合解释 RAG 召回路径。",
+    prompts: ["聚焦产品关系", "聚焦场景规则", "聚焦风险边界"],
+  },
 };
+
+const knowledgeMap = [
+  {
+    id: "products",
+    title: "产品矩阵",
+    owner: "商品知识",
+    coverage: 96,
+    count: 4,
+    status: "完整",
+    color: "orange",
+    items: ["强韧修护洗发水", "清爽控油洗发水", "滋养顺滑护发素", "深层修护发膜"],
+    business: ["AI导购模拟", "AI Chatbot模拟", "GEO内容检验"],
+    gap: "可继续补充规格、容量、价格带和渠道信息。",
+  },
+  {
+    id: "rules",
+    title: "导购规则",
+    owner: "场景知识",
+    coverage: 90,
+    count: 3,
+    status: "可用",
+    color: "green",
+    items: ["出油但发尾干", "干枯毛躁受损", "头皮敏感"],
+    business: ["AI导购模拟"],
+    gap: "建议补充季节、使用频率和多人群组合规则。",
+  },
+  {
+    id: "faq",
+    title: "FAQ 问答",
+    owner: "客服知识",
+    coverage: 88,
+    count: 5,
+    status: "可用",
+    color: "blue",
+    items: ["是否每天使用", "主要功效", "敏感头皮", "出油发尾干", "烫染受损"],
+    business: ["AI Chatbot模拟", "AI导购模拟"],
+    gap: "可补充售后、购买渠道、适用年龄和搭配禁忌。",
+  },
+  {
+    id: "geo",
+    title: "GEO 字段",
+    owner: "AI 搜索资产",
+    coverage: 84,
+    count: 7,
+    status: "需扩展",
+    color: "purple",
+    items: ["产品名称", "品类", "功效", "适用人群", "使用建议", "风险提示", "AI 搜索摘要建议"],
+    business: ["GEO内容检验"],
+    gap: "建议按每个 SKU 补齐结构化字段和搜索摘要版本。",
+  },
+  {
+    id: "boundaries",
+    title: "内容边界",
+    owner: "合规规则",
+    coverage: 92,
+    count: 3,
+    status: "完整",
+    color: "teal",
+    items: ["不夸大功效", "不替代医疗建议", "无知识库内容时不编造"],
+    business: ["AI Chatbot模拟", "GEO内容检验"],
+    gap: "可增加品牌禁词、竞品对比边界和医学风险分级。",
+  },
+  {
+    id: "recall",
+    title: "召回测试关键词",
+    owner: "检索评估",
+    coverage: 76,
+    count: 8,
+    status: "待补强",
+    color: "slate",
+    items: ["出油", "发尾干", "烫染", "毛躁", "敏感", "发膜", "控油", "修护"],
+    business: ["召回测试", "知识溯源"],
+    gap: "建议加入长尾口语、错别字和复合诉求样本。",
+  },
+];
+
+const graphNodes = [
+  { id: "brand", label: "潘婷", type: "品牌", x: 50, y: 45, size: "large", detail: "品牌中心节点，连接产品矩阵、业务应用和内容边界。" },
+  { id: "kb", label: "潘婷测试知识库", type: "知识库", x: 50, y: 18, size: "medium", detail: "20 个段落、8 个问题映射、20 条 embedding 索引。" },
+  { id: "repair", label: "强韧修护洗发水", type: "产品", x: 20, y: 30, size: "medium", detail: "适合受损、脆弱、烫染后护理场景。" },
+  { id: "oil", label: "清爽控油洗发水", type: "产品", x: 22, y: 62, size: "medium", detail: "适合发根容易出油、需要清爽蓬松的用户。" },
+  { id: "conditioner", label: "滋养顺滑护发素", type: "产品", x: 50, y: 76, size: "medium", detail: "适合发尾干、毛躁、需要顺滑护理的搭配场景。" },
+  { id: "mask", label: "深层修护发膜", type: "产品", x: 78, y: 62, size: "medium", detail: "用于加强护理，适合干枯毛躁和受损发质。" },
+  { id: "oilyDry", label: "出油但发尾干", type: "场景", x: 33, y: 47, size: "small", detail: "导购规则：发根控油，发尾搭配护发素或少量发膜。" },
+  { id: "damaged", label: "烫染受损", type: "场景", x: 68, y: 38, size: "small", detail: "导购规则：优先修护类洗发水，搭配发膜加强护理。" },
+  { id: "sensitive", label: "头皮敏感", type: "风险", x: 75, y: 23, size: "small", detail: "回答时需要提示个体差异，严重不适建议咨询专业人士。" },
+  { id: "guideApp", label: "AI导购模拟", type: "应用", x: 35, y: 88, size: "small", detail: "把场景诉求转成产品组合和使用建议。" },
+  { id: "chatApp", label: "AI Chatbot模拟", type: "应用", x: 62, y: 88, size: "small", detail: "面向 FAQ、产品说明和风险提示回答。" },
+  { id: "geoApp", label: "GEO内容检验", type: "应用", x: 86, y: 82, size: "small", detail: "生成结构化摘要，检查 AI 搜索可读性。" },
+  { id: "boundary", label: "内容边界", type: "合规", x: 86, y: 44, size: "small", detail: "不夸大功效、不替代医疗建议、无依据不编造。" },
+];
+
+const graphEdges = [
+  ["kb", "brand", "承载"],
+  ["brand", "repair", "包含"],
+  ["brand", "oil", "包含"],
+  ["brand", "conditioner", "包含"],
+  ["brand", "mask", "包含"],
+  ["oil", "oilyDry", "命中"],
+  ["conditioner", "oilyDry", "搭配"],
+  ["repair", "damaged", "适配"],
+  ["mask", "damaged", "加强护理"],
+  ["sensitive", "boundary", "受约束"],
+  ["oilyDry", "guideApp", "驱动"],
+  ["damaged", "guideApp", "驱动"],
+  ["repair", "chatApp", "问答"],
+  ["boundary", "chatApp", "约束"],
+  ["brand", "geoApp", "摘要"],
+  ["boundary", "geoApp", "校验"],
+];
 
 const sessions = {
   guide: { chatId: null, clientId: crypto.randomUUID() },
@@ -45,12 +170,16 @@ const sessions = {
 
 let currentMode = "guide";
 let pending = false;
+let selectedGraphNode = "brand";
 
 const modeCards = document.querySelectorAll(".mode-card");
+const navItems = document.querySelectorAll(".nav-item");
+const pageTitle = document.querySelector("#pageTitle");
 const panelTitle = document.querySelector("#panelTitle");
 const panelSubtitle = document.querySelector("#panelSubtitle");
 const quickPrompts = document.querySelector("#quickPrompts");
 const conversation = document.querySelector("#conversation");
+const insightWorkspace = document.querySelector("#insightWorkspace");
 const composer = document.querySelector("#composer");
 const questionInput = document.querySelector("#questionInput");
 const traceList = document.querySelector("#traceList");
@@ -61,25 +190,59 @@ const qualityBar = document.querySelector("#qualityBar");
 function setMode(mode) {
   currentMode = mode;
   const data = modes[mode];
+  const isInsight = data.type === "insight";
 
   modeCards.forEach((card) => card.classList.toggle("active", card.dataset.mode === mode));
+  navItems.forEach((item) => item.classList.toggle("active", item.textContent.trim() === navLabelForMode(mode)));
+  pageTitle.textContent = data.title;
   panelTitle.textContent = data.title;
   panelSubtitle.textContent = data.subtitle;
-  questionInput.placeholder = data.placeholder;
   quickPrompts.innerHTML = "";
 
-  data.prompts.forEach((prompt) => {
+  data.prompts.forEach((prompt, index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = prompt;
-    button.addEventListener("click", () => {
-      questionInput.value = prompt;
-      runChat(prompt);
-    });
+    button.addEventListener("click", () => handleQuickPrompt(prompt, index));
     quickPrompts.appendChild(button);
   });
 
+  conversation.hidden = isInsight;
+  insightWorkspace.hidden = !isInsight;
+  composer.hidden = isInsight;
+
+  if (isInsight) {
+    renderInsight(mode);
+    return;
+  }
+
+  questionInput.placeholder = data.placeholder;
   resetConversation();
+}
+
+function navLabelForMode(mode) {
+  return {
+    guide: "知识模拟",
+    chatbot: "知识模拟",
+    geo: "知识模拟",
+    map: "知识地图",
+    graph: "知识图谱",
+  }[mode];
+}
+
+function handleQuickPrompt(prompt, index) {
+  if (modes[currentMode].type === "chat") {
+    questionInput.value = prompt;
+    runChat(prompt);
+    return;
+  }
+
+  if (currentMode === "map") {
+    renderKnowledgeMap(index);
+    return;
+  }
+
+  renderKnowledgeGraph(index);
 }
 
 function resetConversation() {
@@ -88,6 +251,180 @@ function resetConversation() {
   conversation.innerHTML = "";
   addMessage("assistant", `你好，我是${data.title}，会直接调用 MaxKB 应用并基于潘婷测试知识库回答。`);
   renderTrace([], 0);
+}
+
+function renderInsight(mode) {
+  if (mode === "map") {
+    renderKnowledgeMap(0);
+    return;
+  }
+
+  renderKnowledgeGraph(0);
+}
+
+function renderKnowledgeMap(viewIndex = 0) {
+  const sortedDomains = [...knowledgeMap].sort((a, b) => {
+    if (viewIndex === 2) return a.coverage - b.coverage;
+    return b.coverage - a.coverage;
+  });
+  const weakestDomain = [...knowledgeMap].sort((a, b) => a.coverage - b.coverage)[0];
+  const average = Math.round(knowledgeMap.reduce((sum, item) => sum + item.coverage, 0) / knowledgeMap.length);
+  const totalItems = knowledgeMap.reduce((sum, item) => sum + item.count, 0);
+
+  insightWorkspace.innerHTML = `
+    <div class="map-summary">
+      ${renderMetric("知识域", knowledgeMap.length, "个核心模块")}
+      ${renderMetric("知识项", totalItems, "条结构化资产")}
+      ${renderMetric("平均覆盖", `${average}%`, "可演示水平")}
+      ${renderMetric("低覆盖域", weakestDomain.title, weakestDomain.gap)}
+    </div>
+    <div class="knowledge-map-layout">
+      <div class="domain-lane">
+        ${sortedDomains.map(renderDomainCard).join("")}
+      </div>
+      <div class="business-map">
+        <h3>业务入口覆盖</h3>
+        ${renderBusinessRows()}
+      </div>
+    </div>
+  `;
+
+  renderTrace(
+    sortedDomains.map((item) => ({
+      title: item.title,
+      similarity: item.coverage / 100,
+      content: `${item.owner}，${item.count} 个知识项。${item.gap}`,
+    })),
+    average,
+  );
+}
+
+function renderMetric(label, value, note) {
+  return `
+    <div class="metric-card">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      <em>${escapeHtml(note)}</em>
+    </div>
+  `;
+}
+
+function renderDomainCard(item) {
+  return `
+    <article class="domain-card ${item.color}">
+      <div class="domain-head">
+        <div>
+          <span class="domain-owner">${escapeHtml(item.owner)}</span>
+          <h3>${escapeHtml(item.title)}</h3>
+        </div>
+        <span class="domain-status">${escapeHtml(item.status)}</span>
+      </div>
+      <div class="coverage-row">
+        <span>覆盖度</span>
+        <strong>${item.coverage}%</strong>
+      </div>
+      <div class="coverage-bar"><span style="width: ${item.coverage}%"></span></div>
+      <div class="tag-list">
+        ${item.items.map((entry) => `<span>${escapeHtml(entry)}</span>`).join("")}
+      </div>
+      <p>${escapeHtml(item.gap)}</p>
+    </article>
+  `;
+}
+
+function renderBusinessRows() {
+  const rows = ["AI导购模拟", "AI Chatbot模拟", "GEO内容检验", "召回测试", "知识溯源"];
+  return rows
+    .map((row) => {
+      const domains = knowledgeMap.filter((item) => item.business.includes(row));
+      return `
+        <div class="business-row">
+          <span>${escapeHtml(row)}</span>
+          <div>${domains.map((item) => `<strong class="${item.color}">${escapeHtml(item.title)}</strong>`).join("")}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderKnowledgeGraph(focusIndex = 0) {
+  const focusGroups = ["产品", "场景", "合规"];
+  const focusType = focusGroups[focusIndex] || "产品";
+  const selected = graphNodes.find((node) => node.id === selectedGraphNode) || graphNodes[0];
+  const edgeLines = graphEdges.map(([from, to, label]) => renderEdge(from, to, label, focusType)).join("");
+  const nodeButtons = graphNodes.map((node) => renderGraphNode(node, focusType)).join("");
+
+  insightWorkspace.innerHTML = `
+    <div class="graph-shell">
+      <div class="graph-canvas" aria-label="知识图谱网络">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          ${edgeLines}
+        </svg>
+        ${nodeButtons}
+      </div>
+      <aside class="node-detail">
+        <span class="detail-type">${escapeHtml(selected.type)}</span>
+        <h3>${escapeHtml(selected.label)}</h3>
+        <p>${escapeHtml(selected.detail)}</p>
+        <div class="relation-list">
+          ${renderRelations(selected.id)}
+        </div>
+      </aside>
+    </div>
+  `;
+
+  insightWorkspace.querySelectorAll(".graph-node").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedGraphNode = button.dataset.node;
+      renderKnowledgeGraph(focusIndex);
+    });
+  });
+
+  renderTrace(
+    graphEdges
+      .filter(([from, to]) => from === selected.id || to === selected.id)
+      .map(([from, to, label]) => ({
+        title: label,
+        similarity: 0.92,
+        content: `${nodeLabel(from)} -> ${nodeLabel(to)}`,
+      })),
+    94,
+  );
+}
+
+function renderEdge(fromId, toId, label, focusType) {
+  const from = graphNodes.find((node) => node.id === fromId);
+  const to = graphNodes.find((node) => node.id === toId);
+  const isFocus = from.type === focusType || to.type === focusType;
+  const midX = (from.x + to.x) / 2;
+  const midY = (from.y + to.y) / 2;
+  return `
+    <line class="graph-edge ${isFocus ? "focus" : ""}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"></line>
+    <text class="edge-label" x="${midX}" y="${midY}">${escapeHtml(label)}</text>
+  `;
+}
+
+function renderGraphNode(node, focusType) {
+  const isSelected = node.id === selectedGraphNode;
+  const isFocus = node.type === focusType || node.type === "品牌" || node.type === "知识库";
+  return `
+    <button class="graph-node ${node.size} ${isSelected ? "selected" : ""} ${isFocus ? "focus" : "muted"}" data-node="${node.id}" style="left: ${node.x}%; top: ${node.y}%" type="button">
+      <span>${escapeHtml(node.label)}</span>
+      <em>${escapeHtml(node.type)}</em>
+    </button>
+  `;
+}
+
+function renderRelations(nodeId) {
+  const rows = graphEdges.filter(([from, to]) => from === nodeId || to === nodeId);
+  if (!rows.length) return "<span>暂无直接关系</span>";
+  return rows
+    .map(([from, to, label]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(nodeLabel(from))} -> ${escapeHtml(nodeLabel(to))}</span></div>`)
+    .join("");
+}
+
+function nodeLabel(id) {
+  return graphNodes.find((node) => node.id === id)?.label || id;
 }
 
 function addMessage(role, text) {
@@ -197,6 +534,12 @@ modeCards.forEach((card) => {
   card.addEventListener("click", () => setMode(card.dataset.mode));
 });
 
+navItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    if (item.dataset.navMode) setMode(item.dataset.navMode);
+  });
+});
+
 composer.addEventListener("submit", (event) => {
   event.preventDefault();
   const question = questionInput.value.trim();
@@ -205,8 +548,6 @@ composer.addEventListener("submit", (event) => {
   runChat(question);
 });
 
-resetButton.addEventListener("click", resetConversation);
+resetButton.addEventListener("click", () => setMode(currentMode));
 
 setMode("guide");
-
-

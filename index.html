@@ -22,19 +22,21 @@
         <button class="nav-item">知识覆盖</button>
         <button class="nav-item">禁词管理</button>
         <div class="nav-group">测试与验证</div>
-        <button class="nav-item">知识模拟</button>
+        <button class="nav-item" data-nav-mode="guide">知识模拟</button>
         <button class="nav-item">质量巡检</button>
         <button class="nav-item">召回测试</button>
         <div class="nav-group">监控与洞察</div>
         <button class="nav-item">效果度量</button>
         <button class="nav-item">知识溯源</button>
+        <button class="nav-item" data-nav-mode="map">知识地图</button>
+        <button class="nav-item" data-nav-mode="graph">知识图谱</button>
       </nav>
     </aside>
 
     <main class="workspace">
       <header class="topbar">
         <div>
-          <h1>知识模拟</h1>
+          <h1 id="pageTitle">知识模拟</h1>
           <p>同一份潘婷测试知识库，按不同业务目标切换 Prompt 与输出格式。</p>
         </div>
         <div class="status">
@@ -67,6 +69,20 @@
           <span class="mode-desc">结构化提取产品摘要，检查内容完整性和 AI 搜索可读性。</span>
           <span class="mode-foot">适用知识：GEO 字段、结构化摘要、风险边界</span>
         </button>
+        <button class="mode-card" data-mode="map">
+          <span class="mode-icon blue">▦</span>
+          <span class="mode-title">知识地图</span>
+          <span class="mode-badge blue">资产视图</span>
+          <span class="mode-desc">按业务入口、知识域和覆盖度展示知识库结构。</span>
+          <span class="mode-foot">适用知识：产品矩阵、FAQ、导购规则、GEO 字段</span>
+        </button>
+        <button class="mode-card" data-mode="graph">
+          <span class="mode-icon teal">⌘</span>
+          <span class="mode-title">知识图谱</span>
+          <span class="mode-badge teal">关系网络</span>
+          <span class="mode-desc">展示品牌、产品、场景、规则和风险边界之间的关系。</span>
+          <span class="mode-foot">适用知识：实体、关系、引用段落、应用入口</span>
+        </button>
       </section>
 
       <section class="main-panel">
@@ -82,6 +98,7 @@
           <div class="quick-row" id="quickPrompts"></div>
 
           <div class="conversation" id="conversation" aria-live="polite"></div>
+          <div class="insight-workspace" id="insightWorkspace" hidden></div>
 
           <form class="composer" id="composer">
             <input id="questionInput" type="text" autocomplete="off" />
@@ -113,3 +130,4 @@
     <script src="./script.js"></script>
   </body>
 </html>
+
