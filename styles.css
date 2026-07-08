@@ -1829,3 +1829,62 @@ h1 {
     min-width: 680px;
   }
 }
+.import-knowledge-box {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  margin-top: 14px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.import-knowledge-box h3 {
+  margin: 8px 0 6px;
+  font-size: 17px;
+}
+
+.import-knowledge-box p {
+  color: #5b6679;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.import-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.import-flow span {
+  border: 1px solid #d7e0ec;
+  background: var(--surface-soft);
+  border-radius: 999px;
+  color: #40506a;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.import-demo-button {
+  border: 0;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .import-knowledge-box {
+    grid-template-columns: 1fr;
+  }
+
+  .import-demo-button {
+    justify-self: start;
+  }
+}
