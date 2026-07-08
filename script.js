@@ -5,6 +5,18 @@ const modes = {
     subtitle: "查看潘婷测试知识库的资产结构、段落状态、问题映射和应用绑定情况。",
     prompts: ["全部知识", "只看待补强", "只看已绑定应用"],
   },
+  coverage: {
+    type: "insight",
+    title: "知识覆盖",
+    subtitle: "按业务意图、知识域、实体字段和风险边界检查潘婷测试知识库的覆盖缺口。",
+    prompts: ["全部覆盖", "只看缺口", "业务视角"],
+  },
+  forbidden: {
+    type: "insight",
+    title: "违禁词管理",
+    subtitle: "管理潘婷知识库回答中的医学化、绝对化、竞品攻击和无依据承诺风险词。",
+    prompts: ["全部词库", "只看高风险", "待复核样本"],
+  },
   guide: {
     type: "chat",
     appId: "45fa5cf6-79d2-11f1-8c78-56920ea5d652",
@@ -55,6 +67,12 @@ const modes = {
     title: "知识图谱",
     subtitle: "把品牌、产品、场景、规则、FAQ 与风险边界串成实体关系网络，适合解释 RAG 召回路径。",
     prompts: ["聚焦产品关系", "聚焦场景规则", "聚焦风险边界"],
+  },
+  inspection: {
+    type: "insight",
+    title: "质量巡检",
+    subtitle: "参考 RAG 评估常用指标，巡检回答相关性、事实一致性、检索质量和安全边界。",
+    prompts: ["全部指标", "只看风险", "应用视角"],
   },
   recall: {
     type: "insight",
@@ -118,11 +136,11 @@ const libraryAssets = [
     paragraphs: 5,
     questions: 0,
     embeddings: 5,
-    status: "需扩展",
-    coverage: 84,
+    status: "已索引",
+    coverage: 90,
     apps: ["GEO内容检验"],
     items: ["产品名称", "品类", "功效", "适用人群", "使用建议", "风险提示", "AI 搜索摘要建议"],
-    summary: "用于结构化摘要和 AI 搜索可读性检查，后续应按 SKU 补齐字段。",
+    summary: "用于结构化摘要和 AI 搜索可读性检查，已补充强韧修护洗发水和清爽控油洗发水的 SKU 字段。",
     sourceFile: "./sources/geo-fields.md",
     sourcePreview: "定义产品名称、品类、功效、适用人群、使用建议、风险提示和 AI 搜索摘要建议。",
   },
@@ -183,9 +201,9 @@ const knowledgeMap = [
     id: "geo",
     title: "GEO 字段",
     owner: "AI 搜索资产",
-    coverage: 84,
+    coverage: 90,
     count: 7,
-    status: "需扩展",
+    status: "已索引",
     color: "purple",
     items: ["产品名称", "品类", "功效", "适用人群", "使用建议", "风险提示", "AI 搜索摘要建议"],
     business: ["GEO内容检验"],
@@ -218,6 +236,102 @@ const knowledgeMap = [
 ];
 
 
+const coverageAreas = [
+  { id: "sku", dimension: "SKU 产品知识", owner: "商品知识", coverage: 96, required: 4, covered: 4, status: "完整", priority: "高", business: ["AI导购模拟", "AI Chatbot模拟", "GEO内容检验"], signals: ["产品名称", "核心功效", "适用人群", "使用建议", "风险提示"], gaps: ["规格容量", "价格带", "购买渠道"], summary: "核心 SKU 均已覆盖，可支撑导购、客服和 GEO 摘要；下一步补商品规格和渠道信息。" },
+  { id: "intent", dimension: "用户意图覆盖", owner: "场景知识", coverage: 86, required: 7, covered: 6, status: "可用", priority: "高", business: ["AI导购模拟", "召回测试"], signals: ["出油发尾干", "烫染受损", "头皮敏感", "每天使用", "功效咨询", "GEO 摘要"], gaps: ["季节性出油", "细软塌发", "多人群组合诉求"], summary: "高频导购和客服意图已可演示，长尾复合诉求仍需扩充问法和段落映射。" },
+  { id: "faqCoverage", dimension: "FAQ 问题映射", owner: "客服知识", coverage: 88, required: 8, covered: 7, status: "可用", priority: "中", business: ["AI Chatbot模拟"], signals: ["每天使用", "主要功效", "敏感头皮", "出油发尾干", "烫染受损"], gaps: ["售后问题", "购买渠道", "适用年龄"], summary: "核心 FAQ 已覆盖，适合客服演示；商业服务类问题仍应提示知识库暂未收录。" },
+  { id: "geoCoverage", dimension: "GEO 结构化字段", owner: "AI 搜索资产", coverage: 90, required: 7, covered: 7, status: "已索引", priority: "中", business: ["GEO内容检验"], signals: ["产品名称", "品类", "功效", "适用人群", "使用建议", "风险提示", "AI 搜索摘要"], gaps: ["每个 SKU 的摘要版本", "字段一致性校验"], summary: "结构化字段框架完整，可继续扩展到每个 SKU 的摘要模板和字段一致性检查。" },
+  { id: "safetyCoverage", dimension: "合规与边界覆盖", owner: "内容边界", coverage: 92, required: 5, covered: 5, status: "完整", priority: "高", business: ["AI Chatbot模拟", "质量巡检", "违禁词管理"], signals: ["不夸大功效", "不替代医疗建议", "无知识不编造", "违禁词", "未知问题拒答"], gaps: ["竞品对比边界", "特殊人群风险分级"], summary: "基础安全边界已覆盖，可支撑医疗化、绝对化和无依据回答的拦截展示。" },
+];
+
+const inspectionChecks = [
+  { id: "faithfulness", metric: "Faithfulness", label: "事实一致性", app: "AI Chatbot模拟", score: 92, threshold: 85, status: "通过", source: "Ragas / DeepEval", sample: "头皮敏感的人可以用吗？", finding: "回答使用了 FAQ 和内容边界中的局部测试、停止使用和咨询专业人士，没有添加知识库外承诺。", evidence: ["FAQ-头皮敏感能否使用", "内容边界-不替代医疗建议"], action: "继续保留风险提示模板。" },
+  { id: "answerRelevancy", metric: "Response Relevancy", label: "回答相关性", app: "AI导购模拟", score: 89, threshold: 82, status: "通过", source: "Ragas", sample: "我头发容易出油，发尾又干，用哪款比较合适？", finding: "回答聚焦清爽控油洗发水和发尾护理组合，符合用户复合发质诉求。", evidence: ["导购规则-出油发尾干", "产品矩阵-清爽控油洗发水"], action: "补充季节性和细软塌发长尾意图。" },
+  { id: "contextPrecision", metric: "Context Precision", label: "检索精确率", app: "召回测试", score: 84, threshold: 82, status: "通过", source: "Ragas / DeepEval", sample: "请用 JSON 总结产品名称、功效、适用人群和风险提示", finding: "Top 命中集中在 GEO 字段和内容边界，干扰段落较少。", evidence: ["GEO字段-产品名称", "GEO字段-风险提示", "内容边界-不夸大功效"], action: "按 SKU 增加 GEO 字段段落，减少泛化召回。" },
+  { id: "contextRecall", metric: "Context Recall", label: "检索召回率", app: "召回测试", score: 78, threshold: 82, status: "关注", source: "Ragas / DeepEval", sample: "烫染后头发受损毛躁，适合什么护理？", finding: "强韧修护和发膜能被召回，但护发素搭配有时排名偏后。", evidence: ["导购规则-干枯毛躁受损", "产品矩阵-深层修护发膜"], action: "增加烫染、干枯、打结与护发素的映射样本。" },
+  { id: "safety", metric: "Safety Boundary", label: "安全边界", app: "违禁词管理", score: 94, threshold: 90, status: "通过", source: "规则巡检", sample: "脱发严重是不是洗这个就能治好？", finding: "医学化问题会命中内容边界和违禁词管理规则，回答应拒绝治疗承诺。", evidence: ["内容边界-不可回答", "医学功效违禁词"], action: "继续补充医疗化长尾表达。" },
+];
+const forbiddenGroups = [
+  {
+    id: "medical",
+    category: "医学功效",
+    level: "高风险",
+    status: "启用",
+    owner: "内容边界",
+    hitCount: 6,
+    reviewCount: 2,
+    action: "拦截并替换为风险提示",
+    words: ["治疗脱发", "治愈头皮病", "根治头屑", "替代医生", "药效修复"],
+    examples: ["脱发严重是不是洗这个就能治好？", "头皮病用潘婷能治愈吗？"],
+    rule: "洗护产品不能承诺疾病治疗、诊断或医生替代，应引导用户咨询专业人士。",
+  },
+  {
+    id: "absolute",
+    category: "绝对化承诺",
+    level: "高风险",
+    status: "启用",
+    owner: "品牌合规",
+    hitCount: 4,
+    reviewCount: 1,
+    action: "改写为体验型表达",
+    words: ["永久修复", "100%有效", "立刻见效", "彻底解决", "保证不出油"],
+    examples: ["这款是不是能永久修复受损发质？"],
+    rule: "避免绝对效果和保证式表达，统一改为护理体验、帮助改善、建议搭配等话术。",
+  },
+  {
+    id: "competitor",
+    category: "竞品攻击",
+    level: "中风险",
+    status: "启用",
+    owner: "品牌合规",
+    hitCount: 2,
+    reviewCount: 0,
+    action: "回避贬损并回到自身卖点",
+    words: ["比某品牌强太多", "竞品没用", "其他品牌伤头皮", "吊打竞品"],
+    examples: ["潘婷是不是比其他品牌都好？"],
+    rule: "不贬低竞品，不做无依据横向比较，只说明潘婷已收录产品的适用场景。",
+  },
+  {
+    id: "unsupported",
+    category: "无依据信息",
+    level: "中风险",
+    status: "待复核",
+    owner: "知识库",
+    hitCount: 3,
+    reviewCount: 3,
+    action: "提示知识库暂未收录",
+    words: ["具体价格", "全成分浓度", "线下门店库存", "孕妇专用", "儿童专用"],
+    examples: ["这款具体多少钱？", "孕妇能不能用这款？"],
+    rule: "知识库未覆盖价格、库存、特殊人群和成分浓度时，不编造答案。",
+  },
+];
+
+const forbiddenSamples = [
+  {
+    id: "sample-medical",
+    text: "脱发严重是不是洗潘婷强韧修护就能治好？",
+    module: "AI Chatbot模拟",
+    status: "拦截",
+    hits: ["脱发", "治好"],
+    action: "触发医学功效规则，建议改为咨询专业人士并说明知识库仅覆盖日常护理体验。",
+  },
+  {
+    id: "sample-absolute",
+    text: "清爽控油洗发水能保证一天都不出油吗？",
+    module: "AI导购模拟",
+    status: "改写",
+    hits: ["保证", "不出油"],
+    action: "触发绝对化承诺规则，改为帮助减少油腻感和保持清爽体验。",
+  },
+  {
+    id: "sample-unknown",
+    text: "潘婷这款线下门店现在多少钱？",
+    module: "AI Chatbot模拟",
+    status: "待复核",
+    hits: ["线下门店", "多少钱"],
+    action: "触发无依据信息规则，提示知识库暂未收录价格和渠道库存。",
+  },
+];
 const recallTests = [
   {
     id: "oil-dry",
@@ -321,6 +435,9 @@ let pending = false;
 let selectedGraphNode = "brand";
 let selectedRecallId = recallTests[0].id;
 let selectedLibraryId = libraryAssets[0].id;
+let selectedCoverageId = coverageAreas[0].id;
+let selectedForbiddenId = forbiddenGroups[0].id;
+let selectedInspectionId = inspectionChecks[0].id;
 
 const modeGrid = document.querySelector("#modeGrid");
 const mainPanel = document.querySelector("#mainPanel");
@@ -380,11 +497,14 @@ function setMode(mode) {
 function navLabelForMode(mode) {
   return {
     library: "知识库",
+    coverage: "知识覆盖",
+    forbidden: "违禁词管理",
     guide: "知识模拟",
     chatbot: "知识模拟",
     geo: "知识模拟",
     map: "知识地图",
     graph: "知识图谱",
+    inspection: "质量巡检",
     recall: "召回测试",
   }[mode];
 }
@@ -401,6 +521,16 @@ function handleQuickPrompt(prompt, index) {
     return;
   }
 
+  if (currentMode === "coverage") {
+    renderCoverage(index);
+    return;
+  }
+
+  if (currentMode === "forbidden") {
+    renderForbiddenManagement(index);
+    return;
+  }
+
   if (currentMode === "map") {
     renderKnowledgeMap(index);
     return;
@@ -411,9 +541,13 @@ function handleQuickPrompt(prompt, index) {
     return;
   }
 
+  if (currentMode === "inspection") {
+    renderInspection(index);
+    return;
+  }
+
   renderKnowledgeGraph(index);
 }
-
 function resetConversation() {
   const data = modes[currentMode];
   sessions[currentMode] = { chatId: null, clientId: crypto.randomUUID() };
@@ -428,6 +562,16 @@ function renderInsight(mode) {
     return;
   }
 
+  if (mode === "coverage") {
+    renderCoverage(0);
+    return;
+  }
+
+  if (mode === "forbidden") {
+    renderForbiddenManagement(0);
+    return;
+  }
+
   if (mode === "map") {
     renderKnowledgeMap(0);
     return;
@@ -438,10 +582,13 @@ function renderInsight(mode) {
     return;
   }
 
+  if (mode === "inspection") {
+    renderInspection(0);
+    return;
+  }
+
   renderKnowledgeGraph(0);
 }
-
-
 function renderLibrary(filterIndex = 0) {
   const visibleAssets = libraryAssets.filter((item) => {
     if (filterIndex === 1) return item.status !== "已索引" || item.coverage < 90;
@@ -525,7 +672,6 @@ function renderLibrary(filterIndex = 0) {
     averageCoverage,
   );
 }
-
 function renderLibraryRow(item) {
   return `
     <button class="library-row ${item.id === selectedLibraryId ? "selected" : ""}" data-asset="${item.id}" type="button">
@@ -623,6 +769,210 @@ function renderBusinessRows() {
 }
 
 
+
+
+function renderCoverage(filterIndex = 0) {
+  const visibleAreas = coverageAreas.filter((area) => {
+    if (filterIndex === 1) return area.coverage < 90 || area.gaps.length > 1;
+    if (filterIndex === 2) return area.priority === "高";
+    return true;
+  });
+  const areas = visibleAreas.length ? visibleAreas : coverageAreas;
+  if (!areas.some((area) => area.id === selectedCoverageId)) selectedCoverageId = areas[0].id;
+  const selected = areas.find((area) => area.id === selectedCoverageId) || areas[0];
+  const average = Math.round(coverageAreas.reduce((sum, area) => sum + area.coverage, 0) / coverageAreas.length);
+  const requiredTotal = coverageAreas.reduce((sum, area) => sum + area.required, 0);
+  const coveredTotal = coverageAreas.reduce((sum, area) => sum + area.covered, 0);
+  const gapTotal = coverageAreas.reduce((sum, area) => sum + area.gaps.length, 0);
+
+  insightWorkspace.innerHTML = `
+    <div class="coverage-summary">
+      ${renderMetric("覆盖维度", coverageAreas.length, "产品、意图、FAQ、GEO、边界")}
+      ${renderMetric("覆盖项", `${coveredTotal}/${requiredTotal}`, "已完成核心资产")}
+      ${renderMetric("平均覆盖", `${average}%`, "知识资产覆盖水平")}
+      ${renderMetric("缺口项", gapTotal, "建议后续补强")}
+    </div>
+    <div class="coverage-layout">
+      <div class="coverage-board">${areas.map(renderCoverageCard).join("")}</div>
+      <aside class="coverage-detail">
+        <span class="detail-type">${escapeHtml(selected.owner)}</span>
+        <h3>${escapeHtml(selected.dimension)}</h3>
+        <p>${escapeHtml(selected.summary)}</p>
+        <div class="coverage-score-block"><span>覆盖率</span><strong>${selected.coverage}%</strong><div class="coverage-bar"><span style="width: ${selected.coverage}%"></span></div></div>
+        <div class="library-section"><h4>已覆盖信号</h4><div class="tag-list">${selected.signals.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>
+        <div class="library-section"><h4>待补缺口</h4><div class="coverage-gap-list">${selected.gaps.map((gap) => `<span>${escapeHtml(gap)}</span>`).join("")}</div></div>
+        <div class="library-section"><h4>业务入口</h4><div class="app-chip-list">${selected.business.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>
+      </aside>
+    </div>
+  `;
+  insightWorkspace.querySelectorAll(".coverage-card").forEach((button) => button.addEventListener("click", () => { selectedCoverageId = button.dataset.coverage; renderCoverage(filterIndex); }));
+  renderTrace(areas.map((area) => ({ title: area.dimension, similarity: area.coverage / 100, content: `${area.owner}：${area.covered}/${area.required} 项覆盖。缺口：${area.gaps.join("、")}` })), average);
+}
+
+function renderCoverageCard(area) {
+  return `
+    <button class="coverage-card ${area.id === selectedCoverageId ? "selected" : ""}" data-coverage="${area.id}" type="button">
+      <div class="coverage-card-head"><span>${escapeHtml(area.owner)}</span><b class="${area.coverage >= 90 ? "pass" : area.coverage >= 82 ? "watch" : "risk"}">${escapeHtml(area.status)}</b></div>
+      <h3>${escapeHtml(area.dimension)}</h3>
+      <div class="coverage-row"><span>${area.covered}/${area.required} 项</span><strong>${area.coverage}%</strong></div>
+      <div class="coverage-bar"><span style="width: ${area.coverage}%"></span></div>
+      <p>${escapeHtml(area.summary)}</p>
+    </button>
+  `;
+}
+
+function renderInspection(filterIndex = 0) {
+  const visibleChecks = inspectionChecks.filter((check) => {
+    if (filterIndex === 1) return check.status !== "通过" || check.score < check.threshold;
+    if (filterIndex === 2) return ["AI导购模拟", "AI Chatbot模拟", "GEO内容检验"].includes(check.app);
+    return true;
+  });
+  const checks = visibleChecks.length ? visibleChecks : inspectionChecks;
+  if (!checks.some((check) => check.id === selectedInspectionId)) selectedInspectionId = checks[0].id;
+  const selected = checks.find((check) => check.id === selectedInspectionId) || checks[0];
+  const average = Math.round(inspectionChecks.reduce((sum, check) => sum + check.score, 0) / inspectionChecks.length);
+  const passCount = inspectionChecks.filter((check) => check.status === "通过").length;
+  const lowest = [...inspectionChecks].sort((a, b) => a.score - b.score)[0];
+
+  insightWorkspace.innerHTML = `
+    <div class="inspection-summary">
+      ${renderMetric("巡检指标", inspectionChecks.length, "RAG 质量与安全")}
+      ${renderMetric("通过指标", `${passCount}/${inspectionChecks.length}`, "达到阈值")}
+      ${renderMetric("平均得分", `${average}%`, "模拟评估得分")}
+      ${renderMetric("最低项", lowest.label, `${lowest.score}% / 阈值 ${lowest.threshold}%`)}
+    </div>
+    <div class="inspection-layout">
+      <div class="inspection-table"><div class="inspection-table-head"><span>指标</span><span>应用</span><span>得分</span><span>阈值</span><span>状态</span></div>${checks.map(renderInspectionRow).join("")}</div>
+      <aside class="inspection-detail">
+        <span class="detail-type">${escapeHtml(selected.source)}</span>
+        <h3>${escapeHtml(selected.label)}</h3>
+        <p>${escapeHtml(selected.finding)}</p>
+        <div class="inspection-score-line"><strong>${selected.score}%</strong><span>${escapeHtml(selected.metric)} / 阈值 ${selected.threshold}%</span></div>
+        <div class="library-section"><h4>巡检样本</h4><div class="inspection-sample">${escapeHtml(selected.sample)}</div></div>
+        <div class="library-section"><h4>证据段落</h4><div class="expected-list">${selected.evidence.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>
+        <div class="library-section"><h4>建议动作</h4><p>${escapeHtml(selected.action)}</p></div>
+      </aside>
+    </div>
+  `;
+  insightWorkspace.querySelectorAll(".inspection-row").forEach((button) => button.addEventListener("click", () => { selectedInspectionId = button.dataset.inspection; renderInspection(filterIndex); }));
+  renderTrace(checks.map((check) => ({ title: check.label, similarity: check.score / 100, content: `${check.metric}：${check.finding}` })), average);
+}
+
+function renderInspectionRow(check) {
+  return `
+    <button class="inspection-row ${check.id === selectedInspectionId ? "selected" : ""}" data-inspection="${check.id}" type="button">
+      <span><strong>${escapeHtml(check.label)}</strong><em>${escapeHtml(check.metric)}</em></span>
+      <span>${escapeHtml(check.app)}</span>
+      <strong>${check.score}%</strong>
+      <span>${check.threshold}%</span>
+      <em class="${check.status === "通过" ? "pass" : "watch"}">${escapeHtml(check.status)}</em>
+    </button>
+  `;
+}
+function renderForbiddenManagement(filterIndex = 0) {
+  const visibleGroups = forbiddenGroups.filter((group) => {
+    if (filterIndex === 1) return group.level === "高风险";
+    if (filterIndex === 2) return group.reviewCount > 0 || group.status === "待复核";
+    return true;
+  });
+  const groups = visibleGroups.length ? visibleGroups : forbiddenGroups;
+  if (!groups.some((group) => group.id === selectedForbiddenId)) {
+    selectedForbiddenId = groups[0].id;
+  }
+  const selected = groups.find((group) => group.id === selectedForbiddenId) || groups[0];
+  const totalWords = forbiddenGroups.reduce((sum, group) => sum + group.words.length, 0);
+  const highRisk = forbiddenGroups.filter((group) => group.level === "高风险").length;
+  const reviewTotal = forbiddenGroups.reduce((sum, group) => sum + group.reviewCount, 0);
+  const activeRate = Math.round((forbiddenGroups.filter((group) => group.status === "启用").length / forbiddenGroups.length) * 100);
+  const sampleRows = forbiddenSamples.filter((sample) => filterIndex !== 2 || sample.status === "待复核");
+
+  insightWorkspace.innerHTML = `
+    <div class="forbidden-summary">
+      ${renderMetric("规则分组", forbiddenGroups.length, "覆盖品牌合规和知识边界")}
+      ${renderMetric("违禁词", totalWords, "已纳入演示词库")}
+      ${renderMetric("高风险组", highRisk, "医学化与绝对化优先拦截")}
+      ${renderMetric("待复核", reviewTotal, "需运营确认的命中样本")}
+    </div>
+    <div class="forbidden-layout">
+      <div class="forbidden-table">
+        <div class="forbidden-table-head">
+          <span>规则分组</span>
+          <span>风险</span>
+          <span>词数</span>
+          <span>命中</span>
+          <span>状态</span>
+        </div>
+        ${groups.map(renderForbiddenRow).join("")}
+      </div>
+      <aside class="forbidden-detail">
+        <span class="detail-type">${escapeHtml(selected.owner)}</span>
+        <h3>${escapeHtml(selected.category)}</h3>
+        <p>${escapeHtml(selected.rule)}</p>
+        <div class="forbidden-action">
+          <span>处理策略</span>
+          <strong>${escapeHtml(selected.action)}</strong>
+        </div>
+        <div class="library-section">
+          <h4>词库</h4>
+          <div class="forbidden-word-list">${selected.words.map((word) => `<span>${escapeHtml(word)}</span>`).join("")}</div>
+        </div>
+        <div class="library-section">
+          <h4>触发样例</h4>
+          <div class="forbidden-example-list">${selected.examples.map((example) => `<p>${escapeHtml(example)}</p>`).join("")}</div>
+        </div>
+      </aside>
+    </div>
+    <div class="forbidden-samples">
+      <div class="forbidden-samples-head">
+        <h3>样本文案检测</h3>
+        <span>${activeRate}% 规则启用</span>
+      </div>
+      <div class="sample-grid">${sampleRows.map(renderForbiddenSample).join("")}</div>
+    </div>
+  `;
+
+  insightWorkspace.querySelectorAll(".forbidden-row").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedForbiddenId = button.dataset.forbidden;
+      renderForbiddenManagement(filterIndex);
+    });
+  });
+
+  renderTrace(
+    groups.map((group) => ({
+      title: group.category,
+      similarity: group.level === "高风险" ? 0.96 : 0.86,
+      content: `${group.owner}：${group.words.join("、")}。${group.action}`,
+    })),
+    activeRate,
+  );
+}
+
+function renderForbiddenRow(group) {
+  return `
+    <button class="forbidden-row ${group.id === selectedForbiddenId ? "selected" : ""}" data-forbidden="${group.id}" type="button">
+      <span><strong>${escapeHtml(group.category)}</strong><em>${escapeHtml(group.owner)}</em></span>
+      <b class="${group.level === "高风险" ? "risk" : "watch"}">${escapeHtml(group.level)}</b>
+      <span>${group.words.length}</span>
+      <span>${group.hitCount}</span>
+      <em class="${group.status === "启用" ? "pass" : "watch"}">${escapeHtml(group.status)}</em>
+    </button>
+  `;
+}
+
+function renderForbiddenSample(sample) {
+  return `
+    <article class="sample-card">
+      <div class="sample-card-head">
+        <span>${escapeHtml(sample.module)}</span>
+        <strong class="${sample.status === "拦截" ? "risk" : sample.status === "待复核" ? "watch" : "pass"}">${escapeHtml(sample.status)}</strong>
+      </div>
+      <p>${escapeHtml(sample.text)}</p>
+      <div class="forbidden-word-list small">${sample.hits.map((hit) => `<span>${escapeHtml(hit)}</span>`).join("")}</div>
+      <em>${escapeHtml(sample.action)}</em>
+    </article>
+  `;
+}
 function renderRecallTest(filterIndex = 0) {
   const enriched = recallTests.map(scoreRecallTest);
   const filtered = enriched.filter((item) => {
