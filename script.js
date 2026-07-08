@@ -57,7 +57,20 @@ const modes = {
       "输出产品核心字段和内容完整性评分",
     ],
   },
-  metrics: {
+  employee: {
+    type: "chat",
+    local: true,
+    appName: "企业知识查询",
+    title: "企业知识查询",
+    subtitle: "面向新员工和跨项目协作，快速查询企业产品、项目接口文档、源码仓库、负责团队和协作规范。",
+    placeholder: "例如：本公司有什么产品？导购项目接口文档在哪？源码仓库怎么找？",
+    prompts: [
+      "本公司有什么产品？",
+      "导购项目的接口文档在哪里？",
+      "我想查看知识库前端源码，应该找哪个仓库？",
+      "新员工应该先了解哪些企业信息？",
+    ],
+  },  metrics: {
     type: "insight",
     title: "效果度量",
     subtitle: "把 AI 导购、AI Chatbot 和 GEO 内容检验的运行表现沉淀为可汇报、可排查、可优化的效果看板。",
@@ -344,6 +357,56 @@ const forbiddenSamples = [
     action: "触发无依据信息规则，提示知识库暂未收录价格和渠道库存。",
   },
 ];
+const employeeKnowledge = [
+  {
+    id: "company-products",
+    title: "企业产品地图",
+    type: "企业信息",
+    keywords: ["公司", "本公司", "产品", "有什么产品", "业务", "平台"],
+    content: "当前 Demo 中公司产品可按两层理解：一是潘婷品牌知识库应用，覆盖 AI 导购模拟、AI Chatbot 模拟、GEO 内容检验；二是企业知识管理平台能力，覆盖知识库、知识覆盖、召回测试、质量巡检、违禁词管理、知识地图、知识图谱、效果度量和知识溯源。",
+    source: "./sources/company-handbook.md",
+  },
+  {
+    id: "project-api-guide",
+    title: "项目接口文档入口",
+    type: "项目文档",
+    keywords: ["接口", "api", "接口文档", "项目接口", "调用", "后端"],
+    content: "前端统一请求本地代理 /api/chat。Node server.js 接收请求后调用 WSL Docker 容器内的 Python 脚本 /tmp/maxkb_call_app.py，再由脚本访问 MaxKB 应用。新增项目接口时建议先在项目 README 或 sources/api-index.md 登记接口路径、负责人、鉴权方式、请求示例和返回字段。",
+    source: "./server.js",
+  },
+  {
+    id: "source-repository",
+    title: "源码与仓库入口",
+    type: "源码入口",
+    keywords: ["源码", "代码", "仓库", "github", "前端源码", "repo"],
+    content: "当前前端 Demo 源码在 D:\\maxkb-demo-frontend，GitHub 仓库为 git@github.com:Nimoonest/Enterprise-Knowledge-Management-Platform.git。核心文件包括 index.html、styles.css、script.js、server.js 和 maxkb_call_app.py。",
+    source: "git@github.com:Nimoonest/Enterprise-Knowledge-Management-Platform.git",
+  },
+  {
+    id: "new-hire-path",
+    title: "新员工熟悉路径",
+    type: "入职指引",
+    keywords: ["新员工", "入职", "熟悉", "了解", "培训", "上手"],
+    content: "新员工建议按顺序了解：企业知识管理平台目标、潘婷测试知识库内容、三个业务应用入口、知识库源文件、召回测试样本、质量巡检规则、知识溯源链路和 GitHub 提交流程。需要跨项目协作时，优先查询项目接口文档、源码仓库、负责人和最近更新时间。",
+    source: "./sources/company-handbook.md",
+  },
+  {
+    id: "maxkb-operations",
+    title: "MaxKB 本地服务信息",
+    type: "运维信息",
+    keywords: ["maxkb", "服务", "本地", "docker", "登录", "地址", "容器"],
+    content: "MaxKB 本地地址为 http://localhost:8080，容器名 maxkb，运行在 WSL Ubuntu-22.04 Docker Engine 中。常用检查命令包括 docker ps、docker logs -f maxkb 和 docker restart maxkb。前端访问地址为 http://localhost:5178。",
+    source: "./sources/ops-runbook.md",
+  },
+  {
+    id: "collaboration-rule",
+    title: "跨项目协作查询规范",
+    type: "协作规范",
+    keywords: ["跨项目", "其他项目", "负责人", "协作", "规范", "文档"],
+    content: "跨项目查询建议至少返回四类信息：项目用途、接口文档入口、源码仓库入口、联系人或负责人。若知识库没有收录某个项目的接口或源码，应明确提示未收录，并建议补充到项目索引，而不是编造路径。",
+    source: "./sources/project-index.md",
+  },
+];
 const effectMetrics = [
   {
     id: "guide",
@@ -571,6 +634,7 @@ const sessions = {
   guide: { chatId: null, clientId: crypto.randomUUID() },
   chatbot: { chatId: null, clientId: crypto.randomUUID() },
   geo: { chatId: null, clientId: crypto.randomUUID() },
+  employee: { chatId: null, clientId: crypto.randomUUID() },
 };
 
 let currentMode = "guide";
@@ -606,7 +670,7 @@ function setMode(mode) {
   currentMode = mode;
   const data = modes[mode];
   const isInsight = data.type === "insight";
-  const isKnowledgeSimulation = ["guide", "chatbot", "geo"].includes(mode);
+  const isKnowledgeSimulation = ["guide", "chatbot", "geo", "employee"].includes(mode);
 
   modeGrid.hidden = !isKnowledgeSimulation;
   mainPanel.classList.toggle("single-module", isInsight);
@@ -647,6 +711,7 @@ function navLabelForMode(mode) {
     guide: "知识模拟",
     chatbot: "知识模拟",
     geo: "知识模拟",
+    employee: "知识模拟",
     metrics: "效果度量",
     lineage: "知识溯源",
     map: "知识地图",
@@ -708,7 +773,7 @@ function resetConversation() {
   const data = modes[currentMode];
   sessions[currentMode] = { chatId: null, clientId: crypto.randomUUID() };
   conversation.innerHTML = "";
-  addMessage("assistant", `你好，我是${data.title}，会直接调用 MaxKB 应用并基于潘婷测试知识库回答。`);
+  addMessage("assistant", data.local ? `你好，我是${data.title}，可以帮新员工查询企业产品、项目接口、源码仓库和协作规范。` : `你好，我是${data.title}，会直接调用 MaxKB 应用并基于潘婷测试知识库回答。`);
   renderTrace([], 0);
 }
 
@@ -1539,6 +1604,39 @@ function renderTrace(items, score) {
   qualityBar.style.width = `${score || 0}%`;
 }
 
+function answerEmployeeKnowledge(question) {
+  const normalized = question.toLowerCase();
+  const scored = employeeKnowledge
+    .map((item) => {
+      const score = item.keywords.reduce((sum, keyword) => {
+        const key = keyword.toLowerCase();
+        return sum + (normalized.includes(key) || question.includes(keyword) ? 1 : 0);
+      }, 0);
+      return { ...item, score };
+    })
+    .sort((a, b) => b.score - a.score);
+  const hits = scored.filter((item) => item.score > 0).slice(0, 3);
+  const selected = hits.length ? hits : employeeKnowledge.slice(0, 3);
+  const lead = hits.length
+    ? "根据企业知识索引，可以这样理解："
+    : "当前没有命中非常精确的企业知识条目，先给你一份通用企业信息索引：";
+  const answer = [
+    lead,
+    ...selected.map((item, index) => `${index + 1}. ${item.title}：${item.content}`),
+    "\n后续如果接入真实企业知识库，可以把项目 README、接口 OpenAPI、代码仓库索引、负责人信息和权限说明导入 MaxKB，并把本模块切换为企业内部 RAG 应用。",
+  ].join("\n");
+
+  return {
+    answer,
+    quality_score: hits.length ? 91 : 76,
+    traces: selected.map((item) => ({
+      title: item.title,
+      content: item.content,
+      similarity: item.score ? Math.min(0.98, 0.72 + item.score * 0.08) : 0.55,
+      source: item.source,
+    })),
+  };
+}
 async function runChat(question) {
   if (pending) return;
   pending = true;
@@ -1546,8 +1644,20 @@ async function runChat(question) {
   const data = modes[currentMode];
   const session = sessions[currentMode];
   addMessage("user", question);
-  const loadingBubble = addMessage("assistant", "正在调用 MaxKB 应用...");
+  const loadingBubble = addMessage("assistant", data.local ? "正在查询企业知识索引..." : "正在调用 MaxKB 应用...");
   setComposerState(false);
+
+  if (data.local) {
+    try {
+      const result = answerEmployeeKnowledge(question);
+      loadingBubble.textContent = result.answer;
+      renderTrace(result.traces || [], result.quality_score || 0);
+    } finally {
+      pending = false;
+      setComposerState(true);
+    }
+    return;
+  }
 
   try {
     const response = await fetch("/api/chat", {
