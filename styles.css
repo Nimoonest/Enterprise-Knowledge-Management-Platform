@@ -1282,3 +1282,47 @@ h1 {
     min-width: 680px;
   }
 }
+.source-box {
+  border: 1px solid #cbd7ea;
+  background: #f8fbff;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 14px 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.source-box h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.source-box p {
+  color: #536176;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.source-box a {
+  border-radius: 8px;
+  background: var(--blue);
+  color: #fff;
+  padding: 8px 10px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .source-box {
+    grid-template-columns: 1fr;
+  }
+
+  .source-box a {
+    justify-self: start;
+  }
+}

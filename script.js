@@ -78,6 +78,8 @@ const libraryAssets = [
     apps: ["AI导购模拟", "AI Chatbot模拟", "GEO内容检验"],
     items: ["强韧修护洗发水", "清爽控油洗发水", "滋养顺滑护发素", "深层修护发膜"],
     summary: "覆盖核心 SKU、功效、适用人群和搭配关系，是导购和客服回答的主干知识。",
+    sourceFile: "./sources/product-matrix.md",
+    sourcePreview: "包含强韧修护洗发水、清爽控油洗发水、滋养顺滑护发素、深层修护发膜的功效、适用人群和搭配建议。",
   },
   {
     id: "rules",
@@ -91,6 +93,8 @@ const libraryAssets = [
     apps: ["AI导购模拟"],
     items: ["出油但发尾干", "干枯毛躁受损", "头皮敏感"],
     summary: "把用户发质和场景诉求映射到产品组合，决定导购回答是否像业务专家。",
+    sourceFile: "./sources/guide-rules.md",
+    sourcePreview: "覆盖出油但发尾干、干枯毛躁受损、头皮敏感三类导购场景及推荐组合。",
   },
   {
     id: "faq",
@@ -104,6 +108,8 @@ const libraryAssets = [
     apps: ["AI Chatbot模拟", "AI导购模拟"],
     items: ["是否每天使用", "主要功效", "敏感头皮", "出油发尾干", "烫染受损"],
     summary: "覆盖常见问答与用户顾虑，适合验证客服回答准确性和一致性。",
+    sourceFile: "./sources/faq.md",
+    sourcePreview: "包含每日使用、主要功效、敏感头皮、出油发尾干、烫染受损等高频 FAQ。",
   },
   {
     id: "geo",
@@ -117,6 +123,8 @@ const libraryAssets = [
     apps: ["GEO内容检验"],
     items: ["产品名称", "品类", "功效", "适用人群", "使用建议", "风险提示", "AI 搜索摘要建议"],
     summary: "用于结构化摘要和 AI 搜索可读性检查，后续应按 SKU 补齐字段。",
+    sourceFile: "./sources/geo-fields.md",
+    sourcePreview: "定义产品名称、品类、功效、适用人群、使用建议、风险提示和 AI 搜索摘要建议。",
   },
   {
     id: "boundaries",
@@ -130,6 +138,8 @@ const libraryAssets = [
     apps: ["AI Chatbot模拟", "GEO内容检验"],
     items: ["不夸大功效", "不替代医疗建议", "无知识库内容时不编造"],
     summary: "控制回答边界，避免医疗化、绝对化和无依据生成。",
+    sourceFile: "./sources/content-boundaries.md",
+    sourcePreview: "包含不夸大功效、不替代医疗建议、无知识库内容时不编造三条边界规则。",
   },
 ];
 const knowledgeMap = [
@@ -479,6 +489,13 @@ function renderLibrary(filterIndex = 0) {
           <span>覆盖度</span>
           <strong>${selected.coverage}%</strong>
           <div class="coverage-bar"><span style="width: ${selected.coverage}%"></span></div>
+        </div>
+        <div class="source-box">
+          <div>
+            <h4>知识源文件</h4>
+            <p>${escapeHtml(selected.sourcePreview)}</p>
+          </div>
+          <a href="${escapeHtml(selected.sourceFile)}" target="_blank" rel="noreferrer">查看源文件</a>
         </div>
         <div class="library-section">
           <h4>知识项</h4>
