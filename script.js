@@ -57,7 +57,18 @@ const modes = {
       "输出产品核心字段和内容完整性评分",
     ],
   },
-  map: {
+  metrics: {
+    type: "insight",
+    title: "效果度量",
+    subtitle: "把 AI 导购、AI Chatbot 和 GEO 内容检验的运行表现沉淀为可汇报、可排查、可优化的效果看板。",
+    prompts: ["总体表现", "应用对比", "风险与成本"],
+  },
+  lineage: {
+    type: "insight",
+    title: "知识溯源",
+    subtitle: "展示用户问题从应用入口、检索配置、命中段落到最终回答的证据链路，便于审计和复核。",
+    prompts: ["全部链路", "只看风险", "头屑样本"],
+  },  map: {
     type: "insight",
     title: "知识地图",
     subtitle: "把潘婷测试知识库按业务目标、知识域和覆盖度展开，适合向业务方说明知识资产结构。",
@@ -333,6 +344,137 @@ const forbiddenSamples = [
     action: "触发无依据信息规则，提示知识库暂未收录价格和渠道库存。",
   },
 ];
+const effectMetrics = [
+  {
+    id: "guide",
+    app: "AI导购模拟",
+    owner: "电商导购触点",
+    sessions: 128,
+    answerRate: 94,
+    hitRate: 92,
+    helpfulRate: 88,
+    avgScore: 91,
+    latency: 4.8,
+    costLevel: "低",
+    riskIncidents: 2,
+    trend: [84, 87, 89, 91],
+    signals: ["复合发质识别", "产品组合推荐", "风险提示覆盖"],
+    issues: ["头屑+出油复合场景样本偏少", "缺少导购点击转化埋点"],
+    actions: ["补充头屑与控油组合问法", "增加推荐采纳率和点击率字段", "把高频问题加入召回测试集"],
+  },
+  {
+    id: "chatbot",
+    app: "AI Chatbot模拟",
+    owner: "客服问答触点",
+    sessions: 96,
+    answerRate: 91,
+    hitRate: 89,
+    helpfulRate: 84,
+    avgScore: 87,
+    latency: 5.2,
+    costLevel: "中",
+    riskIncidents: 5,
+    trend: [80, 82, 85, 87],
+    signals: ["FAQ 覆盖", "边界提示", "无依据拒答"],
+    issues: ["价格、库存、特殊人群问题仍需明确拒答", "敏感头皮问法需要更多测试样本"],
+    actions: ["把违禁词命中样本加入巡检", "补充客服兜底话术", "复核低分 FAQ 的段落标题"],
+  },
+  {
+    id: "geo",
+    app: "GEO内容检验",
+    owner: "AI 搜索内容治理",
+    sessions: 54,
+    answerRate: 96,
+    hitRate: 94,
+    helpfulRate: 86,
+    avgScore: 90,
+    latency: 6.1,
+    costLevel: "中",
+    riskIncidents: 1,
+    trend: [83, 86, 88, 90],
+    signals: ["结构化字段完整", "摘要可读性", "风险边界保留"],
+    issues: ["GEO 字段可加入品牌调性字段", "部分摘要还缺少使用建议"],
+    actions: ["扩展 GEO 字段模板", "增加 JSON 合法性自动校验", "沉淀 AI 搜索摘要标准样例"],
+  },
+];
+
+const lineageCases = [
+  {
+    id: "oil-dry",
+    query: "我头发容易出油，发尾又干，用哪款比较合适？",
+    app: "AI导购模拟",
+    auditStatus: "已溯源",
+    topScore: 0.94,
+    risk: "无",
+    answer: "建议发根选择清爽控油洗发水，发尾搭配滋养顺滑护发素或少量发膜。",
+    route: ["用户问题", "AI导购模拟", "blend 检索 top_n=5", "命中导购规则与产品矩阵", "生成组合推荐"],
+    evidence: [
+      { title: "导购规则-出油发尾干", type: "场景知识", source: "./sources/guide-rules.md", score: 0.94, used: true, content: "发根容易出油但发尾干时，建议发根使用清爽控油洗发水，发尾搭配护发素或少量发膜。" },
+      { title: "产品矩阵-清爽控油洗发水", type: "商品知识", source: "./sources/product-matrix.md", score: 0.89, used: true, content: "适合发根出油、需要清爽蓬松的人群，避免整头使用过度滋润型产品。" },
+      { title: "FAQ-出油发尾干推荐", type: "FAQ", source: "./sources/faq.md", score: 0.84, used: true, content: "出油但发尾干时可组合控油洗发水和发尾护理产品。" },
+    ],
+  },
+  {
+    id: "dandruff",
+    query: "我头屑比较多，适合哪款产品？",
+    app: "AI导购模拟",
+    auditStatus: "新增知识已命中",
+    topScore: 0.92,
+    risk: "头屑护理边界",
+    answer: "可优先推荐潘婷去屑舒缓洗发水，并提示持续严重头屑或头皮不适需咨询专业人士。",
+    route: ["用户问题", "AI导购模拟", "命中头屑知识", "叠加内容边界", "生成带风险提示的推荐"],
+    evidence: [
+      { title: "产品矩阵-去屑舒缓洗发水", type: "商品知识", source: "./sources/product-matrix.md", score: 0.92, used: true, content: "适合有头屑困扰、希望清洁头皮并获得舒缓护理体验的人群。" },
+      { title: "导购规则-头屑较多", type: "场景知识", source: "./sources/guide-rules.md", score: 0.88, used: true, content: "头屑较多时优先推荐去屑舒缓洗发水，避免承诺治疗效果。" },
+      { title: "内容边界-头屑护理", type: "合规规则", source: "./sources/boundary.md", score: 0.8, used: true, content: "头屑护理不应替代皮肤科诊断，严重或持续不适时建议咨询专业人士。" },
+    ],
+  },
+  {
+    id: "sensitive",
+    query: "头皮敏感的人可以每天用吗？",
+    app: "AI Chatbot模拟",
+    auditStatus: "风险命中",
+    topScore: 0.86,
+    risk: "敏感头皮",
+    answer: "建议先少量试用，若出现明显不适应停止使用；严重不适时咨询专业人士。",
+    route: ["用户问题", "AI Chatbot模拟", "FAQ 命中", "合规边界命中", "生成谨慎回答"],
+    evidence: [
+      { title: "FAQ-头皮敏感能否使用", type: "FAQ", source: "./sources/faq.md", score: 0.86, used: true, content: "头皮敏感人群建议先少量试用，观察是否有不适。" },
+      { title: "内容边界-不替代医疗建议", type: "合规规则", source: "./sources/boundary.md", score: 0.79, used: true, content: "产品建议不能替代医疗诊断或治疗建议。" },
+      { title: "违禁词管理-医学化功效", type: "风险词库", source: "./sources/forbidden-words.md", score: 0.71, used: false, content: "避免使用治疗、根治、药效等医学化承诺。" },
+    ],
+  },
+  {
+    id: "geo-json",
+    query: "请用 JSON 总结产品名称、功效、适用人群和风险提示",
+    app: "GEO内容检验",
+    auditStatus: "结构化可追溯",
+    topScore: 0.88,
+    risk: "摘要夸大风险",
+    answer: "输出产品名称、品类、功效、适用人群、使用建议与风险提示等字段。",
+    route: ["用户问题", "GEO内容检验", "GEO 字段检索", "内容边界复核", "生成结构化摘要"],
+    evidence: [
+      { title: "GEO字段-产品名称", type: "GEO 字段", source: "./sources/geo-fields.md", score: 0.88, used: true, content: "结构化内容应包含产品名称、品类、功效、适用人群和使用建议。" },
+      { title: "GEO字段-风险提示", type: "GEO 字段", source: "./sources/geo-fields.md", score: 0.81, used: true, content: "摘要中应保留风险提示，避免夸大功效。" },
+      { title: "内容边界-不夸大功效", type: "合规规则", source: "./sources/boundary.md", score: 0.74, used: true, content: "不承诺医学治疗或绝对效果。" },
+    ],
+  },
+  {
+    id: "medical-overclaim",
+    query: "脱发严重是不是洗这个就能治好？",
+    app: "AI Chatbot模拟",
+    auditStatus: "风险命中",
+    topScore: 0.83,
+    risk: "医疗越界",
+    answer: "知识库仅覆盖日常洗护体验，不能承诺治疗脱发；严重情况建议咨询专业人士。",
+    route: ["用户问题", "AI Chatbot模拟", "医疗越界识别", "内容边界命中", "拒绝夸大承诺"],
+    evidence: [
+      { title: "内容边界-不替代医疗建议", type: "合规规则", source: "./sources/boundary.md", score: 0.83, used: true, content: "涉及严重脱发、疾病或持续不适，应建议咨询专业人士。" },
+      { title: "内容边界-不夸大功效", type: "合规规则", source: "./sources/boundary.md", score: 0.77, used: true, content: "不得宣称洗护产品可治疗疾病或保证效果。" },
+      { title: "FAQ-产品主要功效", type: "FAQ", source: "./sources/faq.md", score: 0.51, used: false, content: "产品知识覆盖日常清洁、控油、顺滑和修护护理体验。" },
+    ],
+  },
+];
 const recallTests = [
   {
     id: "oil-dry",
@@ -439,6 +581,8 @@ let selectedLibraryId = libraryAssets[0].id;
 let selectedCoverageId = coverageAreas[0].id;
 let selectedForbiddenId = forbiddenGroups[0].id;
 let selectedInspectionId = inspectionChecks[0].id;
+let selectedMetricId = effectMetrics[0].id;
+let selectedLineageId = lineageCases[0].id;
 
 const modeGrid = document.querySelector("#modeGrid");
 const mainPanel = document.querySelector("#mainPanel");
@@ -503,6 +647,8 @@ function navLabelForMode(mode) {
     guide: "知识模拟",
     chatbot: "知识模拟",
     geo: "知识模拟",
+    metrics: "效果度量",
+    lineage: "知识溯源",
     map: "知识地图",
     graph: "知识图谱",
     inspection: "质量巡检",
@@ -532,6 +678,15 @@ function handleQuickPrompt(prompt, index) {
     return;
   }
 
+  if (currentMode === "metrics") {
+    renderEffectMetrics(index);
+    return;
+  }
+
+  if (currentMode === "lineage") {
+    renderLineage(index);
+    return;
+  }
   if (currentMode === "map") {
     renderKnowledgeMap(index);
     return;
@@ -573,6 +728,15 @@ function renderInsight(mode) {
     return;
   }
 
+  if (mode === "metrics") {
+    renderEffectMetrics(0);
+    return;
+  }
+
+  if (mode === "lineage") {
+    renderLineage(0);
+    return;
+  }
   if (mode === "map") {
     renderKnowledgeMap(0);
     return;
@@ -682,6 +846,179 @@ function renderLibraryRow(item) {
       <span>${item.embeddings}</span>
       <b class="${item.status === "已索引" ? "ready" : "todo"}">${escapeHtml(item.status)}</b>
     </button>
+  `;
+}
+function renderEffectMetrics(viewIndex = 0) {
+  const sortedMetrics = viewIndex === 1
+    ? [...effectMetrics].sort((a, b) => b.sessions - a.sessions)
+    : effectMetrics;
+  const visibleMetrics = sortedMetrics.filter((item) => {
+    if (viewIndex === 2) return item.riskIncidents > 1 || item.costLevel !== "低";
+    return true;
+  });
+  const metrics = visibleMetrics.length ? visibleMetrics : effectMetrics;
+  if (!metrics.some((item) => item.id === selectedMetricId)) {
+    selectedMetricId = metrics[0].id;
+  }
+  const selected = metrics.find((item) => item.id === selectedMetricId) || metrics[0];
+  const totalSessions = metrics.reduce((sum, item) => sum + item.sessions, 0);
+  const avgAnswerRate = Math.round(metrics.reduce((sum, item) => sum + item.answerRate, 0) / metrics.length);
+  const avgScore = Math.round(metrics.reduce((sum, item) => sum + item.avgScore, 0) / metrics.length);
+  const riskTotal = metrics.reduce((sum, item) => sum + item.riskIncidents, 0);
+
+  insightWorkspace.innerHTML = `
+    <section class="metrics-summary">
+      ${renderMetric("总会话", `${totalSessions}`, "当前演示样本")}
+      ${renderMetric("有效回答率", `${avgAnswerRate}%`, "有依据且可用")}
+      ${renderMetric("平均质量分", `${avgScore}`, "质量巡检口径")}
+      ${renderMetric("风险拦截", `${riskTotal}`, "需复核样本")}
+    </section>
+
+    <section class="metrics-layout">
+      <div class="panel-card metrics-table">
+        <div class="metrics-table-head">
+          <span>应用</span><span>会话</span><span>知识命中</span><span>质量分</span><span>耗时</span><span>风险</span>
+        </div>
+        ${metrics.map(renderMetricRow).join("")}
+      </div>
+
+      <aside class="panel-card metric-detail">
+        <span class="eyebrow">${escapeHtml(selected.owner)}</span>
+        <h3>${escapeHtml(selected.app)}</h3>
+        <p>${escapeHtml(selected.signals.join(" / "))}</p>
+        <div class="metric-detail-grid">
+          <div><span>有帮助率</span><strong>${selected.helpfulRate}%</strong></div>
+          <div><span>Token/成本</span><strong>${escapeHtml(selected.costLevel)}</strong></div>
+          <div><span>平均耗时</span><strong>${selected.latency}s</strong></div>
+          <div><span>风险样本</span><strong>${selected.riskIncidents}</strong></div>
+        </div>
+        <div class="trend-bars" aria-label="趋势">
+          ${selected.trend.map((value) => `<span style="height:${value}%"><em>${value}</em></span>`).join("")}
+        </div>
+        <h4>当前问题</h4>
+        <ul>${selected.issues.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+        <h4>优化动作</h4>
+        <ul>${selected.actions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </aside>
+    </section>
+
+    <section class="metric-rubric">
+      <div><strong>业务效果</strong><span>会话量、有帮助率、推荐采纳率</span></div>
+      <div><strong>回答质量</strong><span>相关性、完整性、事实一致性</span></div>
+      <div><strong>检索质量</strong><span>知识命中率、Top 分、缺口样本</span></div>
+      <div><strong>成本性能</strong><span>响应耗时、Token 消耗、失败率</span></div>
+      <div><strong>安全合规</strong><span>风险拦截、违禁词、医疗边界</span></div>
+    </section>
+  `;
+
+  insightWorkspace.querySelectorAll("[data-metric-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedMetricId = button.dataset.metricId;
+      renderEffectMetrics(viewIndex);
+    });
+  });
+}
+
+function renderMetricRow(item) {
+  return `
+    <button class="metric-row ${item.id === selectedMetricId ? "active" : ""}" data-metric-id="${escapeHtml(item.id)}">
+      <span><strong>${escapeHtml(item.app)}</strong><em>${escapeHtml(item.owner)}</em></span>
+      <span>${item.sessions}</span>
+      <span>${item.hitRate}%</span>
+      <strong>${item.avgScore}</strong>
+      <span>${item.latency}s</span>
+      <span class="risk-pill ${item.riskIncidents > 2 ? "high" : ""}">${item.riskIncidents}</span>
+    </button>
+  `;
+}
+
+function renderLineage(filterIndex = 0) {
+  const visibleCases = lineageCases.filter((item) => {
+    if (filterIndex === 1) return item.risk !== "无" || item.auditStatus.includes("风险");
+    if (filterIndex === 2) return item.id === "dandruff";
+    return true;
+  });
+  const cases = visibleCases.length ? visibleCases : lineageCases;
+  if (!cases.some((item) => item.id === selectedLineageId)) {
+    selectedLineageId = cases[0].id;
+  }
+  const selected = cases.find((item) => item.id === selectedLineageId) || cases[0];
+  const evidenceCount = selected.evidence.length;
+  const usedCount = selected.evidence.filter((item) => item.used).length;
+  const riskCount = cases.filter((item) => item.risk !== "无" || item.auditStatus.includes("风险")).length;
+  const avgScore = Math.round((cases.reduce((sum, item) => sum + item.topScore, 0) / cases.length) * 100);
+
+  insightWorkspace.innerHTML = `
+    <section class="lineage-summary">
+      ${renderMetric("溯源样本", `${cases.length}`, "可审计问题")}
+      ${renderMetric("平均 Top 分", `${avgScore}`, "召回置信度")}
+      ${renderMetric("当前证据", `${usedCount}/${evidenceCount}`, "用于回答")}
+      ${renderMetric("风险链路", `${riskCount}`, "需人工复核")}
+    </section>
+
+    <section class="lineage-layout">
+      <div class="panel-card lineage-case-list">
+        ${cases.map(renderLineageRow).join("")}
+      </div>
+
+      <article class="panel-card lineage-detail">
+        <div class="lineage-heading">
+          <span class="eyebrow">${escapeHtml(selected.app)}</span>
+          <span class="status-pill">${escapeHtml(selected.auditStatus)}</span>
+        </div>
+        <h3>${escapeHtml(selected.query)}</h3>
+        <p>${escapeHtml(selected.answer)}</p>
+        <div class="source-route">
+          ${selected.route.map((step, index) => `<span>${index + 1}. ${escapeHtml(step)}</span>`).join("")}
+        </div>
+        <h4>命中证据</h4>
+        <div class="evidence-grid">
+          ${selected.evidence.map(renderEvidenceCard).join("")}
+        </div>
+      </article>
+    </section>
+
+    <section class="source-map-strip">
+      <div><strong>产品矩阵</strong><span>./sources/product-matrix.md</span></div>
+      <div><strong>导购规则</strong><span>./sources/guide-rules.md</span></div>
+      <div><strong>FAQ</strong><span>./sources/faq.md</span></div>
+      <div><strong>GEO 字段</strong><span>./sources/geo-fields.md</span></div>
+      <div><strong>内容边界</strong><span>./sources/boundary.md</span></div>
+    </section>
+  `;
+
+  insightWorkspace.querySelectorAll("[data-lineage-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedLineageId = button.dataset.lineageId;
+      renderLineage(filterIndex);
+    });
+  });
+}
+
+function renderLineageRow(item) {
+  return `
+    <button class="lineage-row ${item.id === selectedLineageId ? "active" : ""}" data-lineage-id="${escapeHtml(item.id)}">
+      <span><strong>${escapeHtml(item.query)}</strong><em>${escapeHtml(item.app)}</em></span>
+      <span>${Math.round(item.topScore * 100)}</span>
+      <span class="status-pill ${item.risk !== "无" ? "warn" : ""}">${escapeHtml(item.auditStatus)}</span>
+    </button>
+  `;
+}
+
+function renderEvidenceCard(item) {
+  return `
+    <div class="evidence-card ${item.used ? "used" : ""}">
+      <div class="evidence-title">
+        <strong>${escapeHtml(item.title)}</strong>
+        <span>${item.score.toFixed(2)}</span>
+      </div>
+      <div class="evidence-meta">
+        <span>${escapeHtml(item.type)}</span>
+        <span>${item.used ? "用于回答" : "仅作参考"}</span>
+      </div>
+      <p>${escapeHtml(item.content)}</p>
+      <code>${escapeHtml(item.source)}</code>
+    </div>
   `;
 }
 function renderKnowledgeMap(viewIndex = 0) {
