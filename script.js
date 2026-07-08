@@ -1,4 +1,10 @@
 const modes = {
+  library: {
+    type: "insight",
+    title: "知识库",
+    subtitle: "查看潘婷测试知识库的资产结构、段落状态、问题映射和应用绑定情况。",
+    prompts: ["全部知识", "只看待补强", "只看已绑定应用"],
+  },
   guide: {
     type: "chat",
     appId: "45fa5cf6-79d2-11f1-8c78-56920ea5d652",
@@ -58,6 +64,74 @@ const modes = {
   },
 };
 
+
+const libraryAssets = [
+  {
+    id: "products",
+    title: "产品矩阵",
+    category: "商品知识",
+    paragraphs: 4,
+    questions: 2,
+    embeddings: 4,
+    status: "已索引",
+    coverage: 96,
+    apps: ["AI导购模拟", "AI Chatbot模拟", "GEO内容检验"],
+    items: ["强韧修护洗发水", "清爽控油洗发水", "滋养顺滑护发素", "深层修护发膜"],
+    summary: "覆盖核心 SKU、功效、适用人群和搭配关系，是导购和客服回答的主干知识。",
+  },
+  {
+    id: "rules",
+    title: "导购规则",
+    category: "场景知识",
+    paragraphs: 3,
+    questions: 2,
+    embeddings: 3,
+    status: "已索引",
+    coverage: 90,
+    apps: ["AI导购模拟"],
+    items: ["出油但发尾干", "干枯毛躁受损", "头皮敏感"],
+    summary: "把用户发质和场景诉求映射到产品组合，决定导购回答是否像业务专家。",
+  },
+  {
+    id: "faq",
+    title: "FAQ 问答",
+    category: "客服知识",
+    paragraphs: 5,
+    questions: 4,
+    embeddings: 5,
+    status: "已索引",
+    coverage: 88,
+    apps: ["AI Chatbot模拟", "AI导购模拟"],
+    items: ["是否每天使用", "主要功效", "敏感头皮", "出油发尾干", "烫染受损"],
+    summary: "覆盖常见问答与用户顾虑，适合验证客服回答准确性和一致性。",
+  },
+  {
+    id: "geo",
+    title: "GEO 字段",
+    category: "AI 搜索资产",
+    paragraphs: 5,
+    questions: 0,
+    embeddings: 5,
+    status: "需扩展",
+    coverage: 84,
+    apps: ["GEO内容检验"],
+    items: ["产品名称", "品类", "功效", "适用人群", "使用建议", "风险提示", "AI 搜索摘要建议"],
+    summary: "用于结构化摘要和 AI 搜索可读性检查，后续应按 SKU 补齐字段。",
+  },
+  {
+    id: "boundaries",
+    title: "内容边界",
+    category: "合规规则",
+    paragraphs: 3,
+    questions: 0,
+    embeddings: 3,
+    status: "已索引",
+    coverage: 92,
+    apps: ["AI Chatbot模拟", "GEO内容检验"],
+    items: ["不夸大功效", "不替代医疗建议", "无知识库内容时不编造"],
+    summary: "控制回答边界，避免医疗化、绝对化和无依据生成。",
+  },
+];
 const knowledgeMap = [
   {
     id: "products",
@@ -236,6 +310,7 @@ let currentMode = "guide";
 let pending = false;
 let selectedGraphNode = "brand";
 let selectedRecallId = recallTests[0].id;
+let selectedLibraryId = libraryAssets[0].id;
 
 const modeGrid = document.querySelector("#modeGrid");
 const mainPanel = document.querySelector("#mainPanel");
@@ -294,6 +369,7 @@ function setMode(mode) {
 
 function navLabelForMode(mode) {
   return {
+    library: "知识库",
     guide: "知识模拟",
     chatbot: "知识模拟",
     geo: "知识模拟",
@@ -307,6 +383,11 @@ function handleQuickPrompt(prompt, index) {
   if (modes[currentMode].type === "chat") {
     questionInput.value = prompt;
     runChat(prompt);
+    return;
+  }
+
+  if (currentMode === "library") {
+    renderLibrary(index);
     return;
   }
 
@@ -332,6 +413,11 @@ function resetConversation() {
 }
 
 function renderInsight(mode) {
+  if (mode === "library") {
+    renderLibrary(0);
+    return;
+  }
+
   if (mode === "map") {
     renderKnowledgeMap(0);
     return;
@@ -345,6 +431,95 @@ function renderInsight(mode) {
   renderKnowledgeGraph(0);
 }
 
+
+function renderLibrary(filterIndex = 0) {
+  const visibleAssets = libraryAssets.filter((item) => {
+    if (filterIndex === 1) return item.status !== "已索引" || item.coverage < 90;
+    if (filterIndex === 2) return item.apps.length > 1;
+    return true;
+  });
+  const assets = visibleAssets.length ? visibleAssets : libraryAssets;
+  if (!assets.some((item) => item.id === selectedLibraryId)) {
+    selectedLibraryId = assets[0].id;
+  }
+  const selected = assets.find((item) => item.id === selectedLibraryId) || assets[0];
+  const totals = libraryAssets.reduce(
+    (sum, item) => ({
+      paragraphs: sum.paragraphs + item.paragraphs,
+      questions: sum.questions + item.questions,
+      embeddings: sum.embeddings + item.embeddings,
+    }),
+    { paragraphs: 0, questions: 0, embeddings: 0 },
+  );
+  const averageCoverage = Math.round(libraryAssets.reduce((sum, item) => sum + item.coverage, 0) / libraryAssets.length);
+
+  insightWorkspace.innerHTML = `
+    <div class="library-summary">
+      ${renderMetric("知识段落", totals.paragraphs, "已完成 embedding 索引")}
+      ${renderMetric("问题映射", totals.questions, "覆盖高频用户问法")}
+      ${renderMetric("索引条目", totals.embeddings, "可用于 MaxKB 检索")}
+      ${renderMetric("平均覆盖", `${averageCoverage}%`, "知识资产健康度")}
+    </div>
+    <div class="library-layout">
+      <div class="library-assets">
+        <div class="library-assets-head">
+          <span>知识域</span>
+          <span>段落</span>
+          <span>问题</span>
+          <span>索引</span>
+          <span>状态</span>
+        </div>
+        ${assets.map(renderLibraryRow).join("")}
+      </div>
+      <aside class="library-detail">
+        <span class="detail-type">${escapeHtml(selected.category)}</span>
+        <h3>${escapeHtml(selected.title)}</h3>
+        <p>${escapeHtml(selected.summary)}</p>
+        <div class="library-health">
+          <span>覆盖度</span>
+          <strong>${selected.coverage}%</strong>
+          <div class="coverage-bar"><span style="width: ${selected.coverage}%"></span></div>
+        </div>
+        <div class="library-section">
+          <h4>知识项</h4>
+          <div class="tag-list">${selected.items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+        </div>
+        <div class="library-section">
+          <h4>绑定应用</h4>
+          <div class="app-chip-list">${selected.apps.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+        </div>
+      </aside>
+    </div>
+  `;
+
+  insightWorkspace.querySelectorAll(".library-row").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedLibraryId = button.dataset.asset;
+      renderLibrary(filterIndex);
+    });
+  });
+
+  renderTrace(
+    assets.map((item) => ({
+      title: item.title,
+      similarity: item.coverage / 100,
+      content: `${item.category}：${item.paragraphs} 段、${item.questions} 个问题映射、${item.embeddings} 条索引。${item.summary}`,
+    })),
+    averageCoverage,
+  );
+}
+
+function renderLibraryRow(item) {
+  return `
+    <button class="library-row ${item.id === selectedLibraryId ? "selected" : ""}" data-asset="${item.id}" type="button">
+      <span><strong>${escapeHtml(item.title)}</strong><em>${escapeHtml(item.category)}</em></span>
+      <span>${item.paragraphs}</span>
+      <span>${item.questions}</span>
+      <span>${item.embeddings}</span>
+      <b class="${item.status === "已索引" ? "ready" : "todo"}">${escapeHtml(item.status)}</b>
+    </button>
+  `;
+}
 function renderKnowledgeMap(viewIndex = 0) {
   const sortedDomains = [...knowledgeMap].sort((a, b) => {
     if (viewIndex === 2) return a.coverage - b.coverage;
@@ -734,4 +909,4 @@ composer.addEventListener("submit", (event) => {
 
 resetButton.addEventListener("click", () => setMode(currentMode));
 
-setMode("guide");
+setMode("library");
