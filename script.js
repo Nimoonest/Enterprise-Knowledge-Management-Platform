@@ -184,6 +184,51 @@ const libraryAssets = [
     sourceFile: "./sources/content-boundaries.md",
     sourcePreview: "包含不夸大功效、不替代医疗建议、无知识库内容时不编造和头屑护理边界规则。"
   },
+  {
+    id: "companyHandbook",
+    title: "企业信息与新员工入门",
+    category: "企业知识",
+    paragraphs: 5,
+    questions: 4,
+    embeddings: 5,
+    status: "已索引",
+    coverage: 86,
+    apps: ["企业知识查询"],
+    items: ["企业产品地图", "平台能力", "新员工熟悉路径", "知识库演示入口", "GitHub 提交流程"],
+    summary: "面向企业员工和新员工，说明公司当前 Demo 产品矩阵、平台能力边界和入门学习路径，是企业知识查询的基础信息源。",
+    sourceFile: "./sources/company-handbook.md",
+    sourcePreview: "包含企业产品地图、新员工熟悉路径、平台能力说明，以及从知识库内容到评估模块的学习顺序。",
+  },
+  {
+    id: "projectIndex",
+    title: "项目索引与源码入口",
+    category: "项目知识",
+    paragraphs: 6,
+    questions: 5,
+    embeddings: 6,
+    status: "已索引",
+    coverage: 82,
+    apps: ["企业知识查询"],
+    items: ["前端目录", "GitHub 仓库", "核心源码", "接口文档", "跨项目协作规范", "负责人字段"],
+    summary: "把项目用途、源码仓库、接口入口、核心文件和跨项目协作规范沉淀成可查询索引，帮助员工快速触达其他项目资料。",
+    sourceFile: "./sources/project-index.md",
+    sourcePreview: "包含当前项目本地目录、GitHub 仓库、index.html、script.js、server.js、maxkb_call_app.py 等核心源码入口，以及跨项目协作登记规范。",
+  },
+  {
+    id: "opsRunbook",
+    title: "本地运维手册",
+    category: "运维知识",
+    paragraphs: 4,
+    questions: 3,
+    embeddings: 4,
+    status: "已索引",
+    coverage: 80,
+    apps: ["企业知识查询"],
+    items: ["MaxKB 地址", "Docker 容器", "WSL 命令", "前端代理", "/api/chat 调用链"],
+    summary: "记录 MaxKB 本地服务、WSL Docker、前端代理和常用排障命令，便于员工快速定位服务入口和运行方式。",
+    sourceFile: "./sources/ops-runbook.md",
+    sourcePreview: "包含 MaxKB 地址、容器名、WSL Docker 常用命令、前端代理启动方式，以及 /api/chat 到 MaxKB 的调用链。",
+  },
 ];
 const knowledgeMap = [
   {
@@ -842,9 +887,9 @@ function renderLibrary(filterIndex = 0) {
 
   insightWorkspace.innerHTML = `
     <div class="library-summary">
-      ${renderMetric("知识段落", 25, "已完成 embedding 索引")}
-      ${renderMetric("问题映射", 15, "覆盖高频用户问法")}
-      ${renderMetric("索引条目", 25, "可用于 MaxKB 检索")}
+      ${renderMetric("知识段落", totals.paragraphs, "含品牌知识与企业知识")}
+      ${renderMetric("问题映射", totals.questions, "覆盖用户与员工问法")}
+      ${renderMetric("索引条目", totals.embeddings, "MaxKB / 本地索引")}
       ${renderMetric("平均覆盖", `${averageCoverage}%`, "知识资产健康度")}
     </div>
     <div class="library-layout">
