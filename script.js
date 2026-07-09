@@ -95,7 +95,7 @@ function handleQuickPrompt(index) {
 
 function resetConversation() {
   conversation.innerHTML = "";
-  addMessage("assistant", `你好，我是${modes.guide.title}。我会基于 products_v2.xlsx 构建的新商品知识库回答，可以按香味、品类、预算、使用场景、SKU 或具体商品名称帮你推荐。`);
+  addMessage("assistant", `你好，我是${modes.guide.title}。你可以告诉我想要的香调、品类、预算、使用场景，或直接给我商品名/货号，我来帮你挑。`);
   renderTrace(buildTrace(kb.chunks.slice(0, 5), 0.72), 86);
 }
 
@@ -214,31 +214,35 @@ function searchKnowledge(question) {
   return scored.filter((item) => item.rawScore > 0).sort((a, b) => b.rawScore - a.rawScore).slice(0, 8).map((item) => ({ ...item, score: Math.min(0.98, Math.max(0.52, item.rawScore / maxScore)) }));
 }
 
+function productTypeLabel(type) { const labels = { candle: "家居香氛", fragrance: "个人香氛", bodycare: "身体护理", decoration: "香氛配件" }; return labels[String(type || "").toLowerCase()] || type || ""; }
+
+function cleanRelationText(text) { return String(text || "").replace(/\s*\[[^\]]+\]/g, ""); }
+
 function answerFromLocalKnowledge(question) {
   const hits = searchKnowledge(question);
   const selected = hits.length ? hits.slice(0, 4) : kb.chunks.slice(0, 3).map((chunk, index) => ({ ...chunk, score: 0.55 - index * 0.03, product: kb.products.find((item) => item.SKU === chunk.sku) }));
-  const lead = hits.length ? "我先按你的需求从商品知识库里筛了这些选择：" : "这个问题没有精确命中商品字段，先给你几个可参考的商品入口：";
-  const lines = selected.map((hit, index) => { const product = hit.product || {}; const reasons = [product["副标题"], product["类型"], product["描述"]?.slice(0, 80)].filter(Boolean).join("；"); const relation = [...(product.pairing_suggestions || []), ...(product.cross_sell || [])][0]; return `${index + 1}. ${product["名称"] || hit.title}（SKU：${product.SKU || hit.sku}，${formatPrice(product["价格"])}）：${reasons || "该商品已收录在知识库中。"}${relation ? ` 可搭配：${relation}。` : ""}`; });
-  return { answer: [lead, ...lines, "", "建议你告诉我更具体的香味偏好、预算、使用场景或送礼对象，我可以继续缩小推荐范围。"].join("\n"), traces: selected, quality_score: hits.length ? 89 : 72 };
+  const lead = hits.length ? "可以，按你的需求我比较推荐这几款：" : "我暂时没有找到完全贴合的款式，先给你几款可参考的选择：";
+  const lines = selected.map((hit, index) => { const product = hit.product || {}; const meta = [formatPrice(product["价格"]), product["副标题"], productTypeLabel(product["类型"]), product.SKU ? `货号 ${product.SKU}` : ""].filter(Boolean).join("｜"); const reasons = [product["副标题"], productTypeLabel(product["类型"]), product["描述"]?.slice(0, 80)].filter(Boolean).join("；"); const relation = cleanRelationText([...(product.pairing_suggestions || []), ...(product.cross_sell || [])][0]); return `${index + 1}. ${product["名称"] || hit.title}${meta ? `（${meta}）` : ""}\n   推荐理由：${reasons || "这款比较适合作为备选。"}${relation ? `\n   搭配上可以考虑：${relation}。` : ""}`; });
+  return { answer: [lead, ...lines, "", "你也可以再告诉我更具体的香味偏好、预算、使用场景或送礼对象，我继续帮你缩小范围。"].join("\n"), traces: selected, quality_score: hits.length ? 89 : 72 };
 }
 
 async function runChat(question) {
   if (pending) return;
   pending = true;
   addMessage("user", question);
-  const loadingBubble = addMessage("assistant", "正在调用 MaxKB 商品导购应用...");
+  const loadingBubble = addMessage("assistant", "我先帮你看一下合适的选择...");
   setComposerState(false);
   try {
     const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ app_id: PRODUCT_APP_ID, app_name: PRODUCT_APP_NAME, message: question, chat_id: session.chatId, client_id: session.clientId }) });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "MaxKB 调用失败");
+    if (!response.ok) throw new Error(result.error || "导购服务暂时不可用");
     session.chatId = result.chat_id;
     session.clientId = result.client_id || session.clientId;
-    loadingBubble.textContent = result.answer || "MaxKB 没有返回内容。";
+    loadingBubble.textContent = result.answer || "我暂时没有找到合适的回答，你可以换个说法再试一次。";
     renderTrace(result.traces || [], result.quality_score || 0);
   } catch (error) {
     const fallback = answerFromLocalKnowledge(question);
-    loadingBubble.textContent = `${fallback.answer}\n\n注：MaxKB 应用暂未返回成功结果，当前使用本地商品知识索引兜底。错误信息：${error.message}`;
+    loadingBubble.textContent = fallback.answer;
     renderTrace(fallback.traces || [], fallback.quality_score || 0);
   } finally {
     pending = false;
@@ -253,5 +257,7 @@ function escapeHtml(value) { return String(value ?? "").replaceAll("&", "&amp;")
 composer.addEventListener("submit", (event) => { event.preventDefault(); const question = questionInput.value.trim(); if (!question) return; questionInput.value = ""; runChat(question); });
 resetButton.addEventListener("click", () => setMode(currentMode));
 init();
+
+
 
 
