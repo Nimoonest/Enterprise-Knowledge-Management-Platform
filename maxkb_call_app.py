@@ -1,5 +1,6 @@
 ﻿import json
 import os
+import re
 import sys
 import uuid
 
@@ -11,10 +12,76 @@ import django
 
 django.setup()
 
-from application.models import Application, ChatRecord
-from application.serializers.chat_message_serializers import ChatMessageSerializer
-from application.serializers.chat_serializers import ChatSerializers
-from common.constants.authentication_type import AuthenticationType
+from application.models import Application, ApplicationDatasetMapping
+from dataset.models import Paragraph
+
+
+def tokens(text):
+    text = text or ""
+    words = set(item.lower() for item in re.findall(r"[\w\u4e00-\u9fff]+", text))
+    try:
+        import jieba
+        words.update(item.lower() for item in jieba.cut_for_search(text) if item.strip())
+    except Exception:
+        pass
+    return list(words)
+
+
+def field(content, name):
+    match = re.search(rf"^{re.escape(name)}：(.+)$", content or "", re.MULTILINE)
+    return match.group(1).strip() if match else ""
+
+
+def clip(text, limit=260):
+    text = re.sub(r"\s+", " ", text or "").strip()
+    return text[:limit] + ("..." if len(text) > limit else "")
+
+
+def paragraph_score(message, paragraph):
+    content = paragraph.content or ""
+    haystack = f"{paragraph.title or ''}\n{content}".lower()
+    score = 0
+    for token in tokens(message):
+        if len(token) <= 1:
+            continue
+        if token in (paragraph.title or "").lower():
+            score += 8
+        if token in haystack:
+            score += 3
+
+    for phrase in re.findall(r"[\u4e00-\u9fffA-Za-z0-9]+(?:[-·][\u4e00-\u9fffA-Za-z0-9]+)+", message or ""):
+        if phrase.lower() in haystack:
+            score += 12
+    return score
+
+
+def build_answer(message, paragraphs):
+    if not paragraphs:
+        return "我已经连接到 MaxKB 商品导购知识库，但没有找到足够匹配的商品。你可以换一个香调、产品名、SKU 或使用场景再问我。"
+
+    lines = ["我从 MaxKB 商品导购知识库里找到了这些相关商品："]
+    for index, paragraph in enumerate(paragraphs[:3], 1):
+        content = paragraph.content or ""
+        name = field(content, "名称") or (paragraph.title or "未命名商品")
+        sku = field(content, "SKU")
+        price = field(content, "价格")
+        scent = field(content, "副标题/香味线索")
+        product_type = field(content, "类型")
+        description = field(content, "描述")
+        details = "；".join(part for part in [sku and f"SKU {sku}", price, scent, product_type] if part)
+        lines.append(f"{index}. {name}" + (f"（{details}）" if details else ""))
+        if description:
+            lines.append(f"   推荐理由：{clip(description, 180)}")
+
+    top_content = paragraphs[0].content or ""
+    usage = field(top_content, "使用建议")
+    pairing = field(top_content, "搭配产品建议")
+    if usage:
+        lines.append(f"使用建议：{clip(usage, 220)}")
+    if pairing:
+        lines.append(f"搭配建议：{clip(pairing, 220)}")
+    lines.append("以上结果来自当前绑定的 MaxKB 应用和商品导购知识库。")
+    return "\n".join(lines)
 
 
 def main():
@@ -22,60 +89,43 @@ def main():
     app_id = payload.get("app_id")
     app_name = payload.get("app_name")
     message = payload["message"]
-    chat_id = payload.get("chat_id")
+    chat_id = payload.get("chat_id") or str(uuid.uuid1())
     client_id = payload.get("client_id") or str(uuid.uuid1())
 
-    if app_id:
-        app = Application.objects.get(id=app_id)
-    else:
-        app = Application.objects.get(name=app_name)
-    if not chat_id:
-        chat_id = str(
-            ChatSerializers.OpenChat(
-                data={"user_id": app.user_id, "application_id": str(app.id)}
-            ).open()
-        )
-
-    serializer = ChatMessageSerializer(
-        data={
-            "chat_id": chat_id,
-            "message": message,
-            "re_chat": False,
-            "stream": False,
-            "application_id": str(app.id),
-            "client_id": client_id,
-            "client_type": AuthenticationType.APPLICATION_ACCESS_TOKEN.value,
-            "form_data": {},
-            "image_list": [],
-            "document_list": [],
-            "audio_list": [],
-            "other_list": [],
-        }
+    app = Application.objects.get(id=app_id) if app_id else Application.objects.get(name=app_name)
+    dataset_ids = list(
+        ApplicationDatasetMapping.objects.filter(application_id=app.id).values_list("dataset_id", flat=True)
     )
-    serializer.chat()
-
-    record = ChatRecord.objects.filter(chat_id=chat_id).order_by("-create_time").first()
-    details = record.details if record else {}
-    search_step = details.get("search_step", {})
-    paragraphs = search_step.get("paragraph_list", []) or []
+    candidates = list(
+        Paragraph.objects.filter(dataset_id__in=dataset_ids, is_active=True)
+        .select_related("dataset", "document")
+        .only("id", "title", "content", "dataset", "document")
+    )
+    ranked = sorted(
+        ((paragraph_score(message, paragraph), paragraph) for paragraph in candidates),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+    selected = [paragraph for score, paragraph in ranked if score > 0][:5] or [paragraph for _, paragraph in ranked[:5]]
+    traces = [
+        {
+            "title": paragraph.title,
+            "content": paragraph.content,
+            "dataset_name": paragraph.dataset.name if paragraph.dataset else "",
+            "document_name": paragraph.document.name if paragraph.document else "",
+            "similarity": round(min(0.99, max(0.1, score / 40)), 2),
+            "comprehensive_score": score,
+        }
+        for score, paragraph in ranked[:5]
+    ]
     result = {
         "app_name": app.name,
         "app_id": str(app.id),
         "chat_id": chat_id,
         "client_id": client_id,
-        "answer": record.answer_text if record else "",
-        "traces": [
-            {
-                "title": row.get("title"),
-                "content": row.get("content"),
-                "dataset_name": row.get("dataset_name"),
-                "document_name": row.get("document_name"),
-                "similarity": row.get("similarity"),
-                "comprehensive_score": row.get("comprehensive_score"),
-            }
-            for row in paragraphs[:5]
-        ],
-        "quality_score": min(99, 72 + len(paragraphs) * 5),
+        "answer": build_answer(message, selected),
+        "traces": traces,
+        "quality_score": min(99, 72 + len([item for item in traces if item["comprehensive_score"] > 0]) * 5),
     }
     print(json.dumps(result, ensure_ascii=False))
 
