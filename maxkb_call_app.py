@@ -37,10 +37,37 @@ def clip(text, limit=260):
     return text[:limit] + ("..." if len(text) > limit else "")
 
 
+def normalize_identity(text):
+    return re.sub(r"[^\w\u4e00-\u9fff]+", "", text or "").lower()
+
+
+def is_price_query(message):
+    return any(keyword in (message or "") for keyword in ["价格", "多少钱", "售价", "价钱", "几钱", "多少元"])
+
+
+def product_identity_score(message, paragraph):
+    msg = normalize_identity(message)
+    content = paragraph.content or ""
+    name = field(content, "名称") or (paragraph.title or "")
+    sku = field(content, "SKU")
+    normalized_name = normalize_identity(name)
+    normalized_sku = normalize_identity(sku)
+    score = 0
+    if normalized_sku and normalized_sku in msg:
+        score += 120
+    if normalized_name and normalized_name in msg:
+        score += 100
+    if normalized_name:
+        name_parts = [part for part in tokens(name) if len(part) > 1]
+        matched_parts = [part for part in name_parts if part in msg]
+        score += len(matched_parts) * 10
+    return score
+
+
 def paragraph_score(message, paragraph):
     content = paragraph.content or ""
     haystack = f"{paragraph.title or ''}\n{content}".lower()
-    score = 0
+    score = product_identity_score(message, paragraph)
     for token in tokens(message):
         if len(token) <= 1:
             continue
@@ -55,7 +82,27 @@ def paragraph_score(message, paragraph):
     return score
 
 
+def build_price_answer(paragraph):
+    content = paragraph.content or ""
+    name = field(content, "名称") or (paragraph.title or "该商品")
+    sku = field(content, "SKU")
+    price = field(content, "价格")
+    detail_url = field(content, "详情页")
+    if price:
+        parts = [f"{name}的价格是 {price}"]
+    else:
+        parts = [f"我在 MaxKB 商品导购知识库里找到了{name}，但当前知识里没有记录价格"]
+    if sku:
+        parts.append(f"SKU：{sku}")
+    if detail_url:
+        parts.append(f"详情页：{detail_url}")
+    return "。".join(parts) + "。"
+
+
 def build_answer(message, paragraphs):
+    if paragraphs and is_price_query(message):
+        return build_price_answer(paragraphs[0])
+
     if not paragraphs:
         return "我已经连接到 MaxKB 商品导购知识库，但没有找到足够匹配的商品。你可以换一个香调、产品名、SKU 或使用场景再问我。"
 
@@ -132,4 +179,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
