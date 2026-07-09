@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import sys
 import uuid
@@ -22,19 +22,7 @@ APP_NAME = "商品导购问答机器人"
 TEMPLATE_APP_NAME = "AI导购模拟"
 JSONL_PATH = Path("/tmp/maxkb_product_chunks.jsonl")
 
-PROMPT = """Knowledge snippets:
-{data}
-
-你是中文商品导购问答机器人。只能使用上方商品知识回答，不要使用外部常识，不要提到知识片段、上下文或知识库。
-
-回答规则：
-1. 用户询问香味、品类、预算、送礼对象或使用场景时，推荐 2-4 个相关商品，并说明每个商品的名称、SKU、价格、香味/副标题和推荐理由。
-2. 用户询问具体商品时，返回名称、SKU、价格、香味/副标题、核心描述、使用建议、搭配关系和详情页。
-3. 用户询问某某香味时，优先根据副标题、香调、描述、分类和商品名检索推荐。
-4. 如果没有相关商品或字段未收录，回答“没有在知识库中查找到相关信息。”，不要编造库存、价格、功效或链接。
-
-Question:
-{question}"""
+PROMPT = '商品资料：\n{data}\n\n你是一名真实、耐心、专业的中文香氛导购。商品资料只作为事实来源；回答时不要提到 MaxKB、RAG、知识库、检索、上下文、片段、系统等内部词。\n\n对话规则：\n1. 必须结合历史对话理解用户当前问题。用户说“这几款 / 上面 / 刚才 / 其中 / 第二款 / 这三款”时，优先基于历史对话中已经推荐过的候选商品回答，不要重新推荐无关商品，除非用户明确要求换一批。\n2. 商品事实必须来自商品资料或历史对话中已经给出的商品事实。价格、货号/SKU、库存、链接等确定字段不能编造。\n3. 用户询问香味、品类、预算、送礼对象或使用场景时，像真实导购一样优先推荐 3 个相关商品，说明商品名、价格、货号、香调/特点和推荐理由。\n4. 用户询问具体商品时，优先直接回答用户关心的信息；必要时补充香调、价格、货号、使用建议或搭配建议，不要堆砌无关字段。\n5. 用户比较“哪款更淡 / 更适合送礼 / 更高级 / 更适合小空间”时，根据历史候选商品和商品描述做相对判断，并说明理由。\n6. 如果商品资料和历史对话都不足以回答，要自然地说明还需要补充哪类偏好或商品信息，不要说“知识库未查到”。\n\n用户当前问题：\n{question}'
 
 
 def read_chunks():
@@ -114,26 +102,26 @@ def main():
         defaults={
             "desc": "基于 products_v2.xlsx 商品知识库的 AI 导购问答应用。",
             "prologue": "你好，我是商品导购问答机器人，可以按香味、品类、预算、送礼场景或具体商品名称帮你推荐。",
-            "dialogue_number": 0,
+            "dialogue_number": 5,
             "user_id": user.id,
             "model_id": template.model_id,
             "dataset_setting": {
                 **(template.dataset_setting or {}),
-                "top_n": 6,
+                "top_n": 5,
                 "similarity": 0.0,
                 "search_mode": "blend",
-                "max_paragraph_char_number": 8000,
-                "no_references_setting": {"value": "没有在知识库中查找到相关信息。", "status": "designated_answer"},
+                "max_paragraph_char_number": 5500,
+                "no_references_setting": {"value": "{question}", "status": "ai_questioning"},
             },
             "model_setting": {
                 **(template.model_setting or {}),
                 "prompt": PROMPT,
-                "no_references_prompt": "没有在知识库中查找到相关信息。",
+                "no_references_prompt": '请结合历史对话继续回答用户。如果历史对话也不足以回答，请用真实导购口吻询问用户补充香调、预算、使用空间或具体商品。不要提到 MaxKB、RAG、知识库、检索、上下文等内部词。\n\n用户当前问题：\n{question}',
                 "reasoning_content_enable": False,
                 "reasoning_content_start": "<think>",
                 "reasoning_content_end": "</think>",
             },
-            "model_params_setting": {**(template.model_params_setting or {}), "max_tokens": 1200, "temperature": 0.35},
+            "model_params_setting": {**(template.model_params_setting or {}), "max_tokens": 700, "temperature": 0.35},
             "tts_model_params_setting": template.tts_model_params_setting or {},
             "problem_optimization": False,
             "icon": template.icon,
@@ -176,4 +164,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

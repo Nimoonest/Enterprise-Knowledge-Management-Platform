@@ -1,11 +1,11 @@
-﻿const PRODUCT_KB_URL = "./data/products_kb.json";
+const PRODUCT_KB_URL = "./data/products_kb.json";
 const PRODUCT_APP_NAME = "商品导购问答机器人";
 const PRODUCT_APP_ID = "5c9aab66-7aac-11f1-807c-fe3788870ed2";
 
 const modes = {
   library: { type: "insight", title: "商品知识库", subtitle: "查看 products_v2.xlsx 生成的商品、分类、图片、搭配关系和知识分段。", prompts: ["全部商品", "有库存商品", "高价商品"] },
   coverage: { type: "insight", title: "知识覆盖", subtitle: "按商品字段、关联关系、图片、分类和导购分段检查新知识库完整度。", prompts: ["总体覆盖", "待补字段", "导购视角"] },
-  guide: { type: "chat", title: "AI 商品导购", subtitle: "连接 MaxKB 商品导购应用；若应用暂不可用，则使用本地商品知识索引兜底推荐。", placeholder: "例如：我想要木质香调的蜡烛，预算 1000 左右，有什么推荐？", prompts: ["我想要木质香调的蜡烛，预算 1000 左右，有什么推荐？", "有没有圣日尔曼大道34号相关的香氛产品？", "我想了解大号香氛蜡烛-圣日尔曼大道34号的各方面信息", "想送礼，推荐几款有质感的家居香氛"] },
+  guide: { type: "chat", title: "AI 商品导购", subtitle: "连接商品导购应用，支持连续追问、商品推荐和价格咨询。", placeholder: "例如：我想要木质香调的蜡烛，预算 1000 左右，有什么推荐？", prompts: ["我想要木质香调的蜡烛，预算 1000 左右，有什么推荐？", "有没有圣日尔曼大道34号相关的香氛产品？", "我想了解大号香氛蜡烛-圣日尔曼大道34号的各方面信息", "想送礼，推荐几款有质感的家居香氛"] },
   recall: { type: "insight", title: "召回测试", subtitle: "用商品名称、SKU、香味、品类和场景问题检查本地知识分段命中情况。", prompts: ["全部样本", "香味查询", "商品详情"] },
   lineage: { type: "insight", title: "知识溯源", subtitle: "展示导购问题如何命中商品分段、结构化字段和搭配关系。", prompts: ["推荐链路", "详情链路", "搭配链路"] },
 };
@@ -241,9 +241,8 @@ async function runChat(question) {
     loadingBubble.textContent = result.answer || "我暂时没有找到合适的回答，你可以换个说法再试一次。";
     renderTrace(result.traces || [], result.quality_score || 0);
   } catch (error) {
-    const fallback = answerFromLocalKnowledge(question);
-    loadingBubble.textContent = fallback.answer;
-    renderTrace(fallback.traces || [], fallback.quality_score || 0);
+    loadingBubble.textContent = "导购服务暂时没有成功返回，请稍后再试。";
+    renderTrace([], 0);
   } finally {
     pending = false;
     setComposerState(true);
@@ -257,7 +256,3 @@ function escapeHtml(value) { return String(value ?? "").replaceAll("&", "&amp;")
 composer.addEventListener("submit", (event) => { event.preventDefault(); const question = questionInput.value.trim(); if (!question) return; questionInput.value = ""; runChat(question); });
 resetButton.addEventListener("click", () => setMode(currentMode));
 init();
-
-
-
-

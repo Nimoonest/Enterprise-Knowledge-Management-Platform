@@ -124,4 +124,3 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, () => {
   console.log(`MaxKB demo frontend running at http://localhost:${port}`);
 });
-
