@@ -1,4 +1,4 @@
-const PRODUCT_KB_URL = "./data/products_kb.json";
+const PRODUCT_KB_URL = "/api/kb";
 const PRODUCT_APP_NAME = "商品导购问答机器人";
 const PRODUCT_APP_ID = "5c9aab66-7aac-11f1-807c-fe3788870ed2";
 
@@ -154,7 +154,7 @@ function renderCoverageCard(row) { const cls = row.score >= 90 ? "pass" : row.sc
 
 function recallSamples() { return [{ question: "木质香调蜡烛推荐", expected: ["木质", "蜡烛"] }, { question: "圣日尔曼大道34号淡香精", expected: ["圣日尔曼大道34号", "淡香精"] }, { question: "预算1000左右的香氛蜡烛", expected: ["蜡烛", "CNY"] }, { question: "车载扩香器香氛套装", expected: ["车载", "扩香"] }, { question: "适合送礼的家居香氛", expected: ["gift", "home", "香氛"] }]; }
 
-function renderRecall(filterIndex = 0) {
+function renderRecallLegacy(filterIndex = 0) {
   const samples = recallSamples().filter((item) => filterIndex === 1 ? item.question.includes("香调") || item.question.includes("圣日尔曼") : filterIndex === 2 ? item.question.includes("淡香精") || item.question.includes("蜡烛") : true);
   if (selectedRecallIndex >= samples.length) selectedRecallIndex = 0;
   const selected = samples[selectedRecallIndex];
@@ -255,4 +255,105 @@ function escapeHtml(value) { return String(value ?? "").replaceAll("&", "&amp;")
 
 composer.addEventListener("submit", (event) => { event.preventDefault(); const question = questionInput.value.trim(); if (!question) return; questionInput.value = ""; runChat(question); });
 resetButton.addEventListener("click", () => setMode(currentMode));
+
+let retrievalRequestVersion = 0;
+let retrievalMode = "hybrid";
+let retrievalRerank = true;
+let retrievalQuery = "";
+
+function retrievalText(key) {
+  const labels = {
+    query: "\u68c0\u7d22\u67e5\u8be2",
+    keyword: "\u5173\u952e\u8bcd",
+    vector: "\u5411\u91cf",
+    hybrid: "\u6df7\u5408\u53ec\u56de",
+    rerank: "\u91cd\u6392",
+    search: "\u68c0\u7d22",
+    samples: "\u6d4b\u8bd5\u6837\u672c",
+    candidates: "\u5019\u9009\u6570",
+    latency: "\u8017\u65f6",
+    provider: "\u5411\u91cf\u63d0\u4f9b\u5668",
+    loading: "\u6b63\u5728\u6267\u884c\u591a\u8def\u53ec\u56de\u4e0e\u91cd\u6392...",
+    noHits: "\u6682\u65e0\u547d\u4e2d\u7ed3\u679c",
+  };
+  return labels[key] || key;
+}
+
+function renderRetrievalWorkspace(samples, selected, result = null, loading = false, error = "") {
+  const hits = result?.hits || [];
+  const provider = result?.embedding_provider?.name || "--";
+  insightWorkspace.innerHTML = `
+    <form class="retrieval-controls" id="retrievalForm">
+      <label><span>${retrievalText("query")}</span><input id="retrievalQuery" value="${escapeHtml(retrievalQuery || selected.question)}" /></label>
+      <label><span>${retrievalText("hybrid")}</span><select id="retrievalMode">
+        <option value="keyword" ${retrievalMode === "keyword" ? "selected" : ""}>${retrievalText("keyword")}</option>
+        <option value="vector" ${retrievalMode === "vector" ? "selected" : ""}>${retrievalText("vector")}</option>
+        <option value="hybrid" ${retrievalMode === "hybrid" ? "selected" : ""}>${retrievalText("hybrid")}</option>
+      </select></label>
+      <label class="retrieval-toggle"><input id="retrievalRerank" type="checkbox" ${retrievalRerank ? "checked" : ""} /><span>${retrievalText("rerank")}</span></label>
+      <button type="submit">${retrievalText("search")}</button>
+    </form>
+    <div class="recall-summary">
+      ${renderMetric(retrievalText("samples"), samples.length, retrievalMode)}
+      ${renderMetric(retrievalText("candidates"), result?.candidate_count ?? "--", `Top ${hits.length}`)}
+      ${renderMetric(retrievalText("latency"), result ? `${result.took_ms.toFixed(1)} ms` : "--", provider)}
+    </div>
+    <div class="recall-layout">
+      <div class="recall-table">
+        <div class="recall-table-head"><span>${retrievalText("query")}</span><span>${retrievalText("samples")}</span><span>${retrievalText("search")}</span></div>
+        ${samples.map((item, index) => `<button class="recall-row ${index === selectedRecallIndex ? "selected" : ""}" data-index="${index}" type="button"><span>${escapeHtml(item.question)}</span><span>${item.expected.map(escapeHtml).join(" / ")}</span><b>${index === selectedRecallIndex ? retrievalText("search") : ""}</b></button>`).join("")}
+      </div>
+      <aside class="recall-detail">
+        <h3>${escapeHtml(retrievalQuery || selected.question)}</h3>
+        ${loading ? `<div class="trace-empty">${retrievalText("loading")}</div>` : ""}
+        ${error ? `<div class="admin-error">${escapeHtml(error)}</div>` : ""}
+        ${!loading && !error && !hits.length ? `<div class="trace-empty">${retrievalText("noHits")}</div>` : ""}
+        ${hits.map((hit) => `<article class="retrieval-hit">
+          <div class="trace-title"><span>${hit.rank}. ${escapeHtml(hit.title)}</span><span class="trace-score">${Number(hit.score).toFixed(3)}</span></div>
+          <div class="retrieval-score-grid">
+            <span>${retrievalText("keyword")} <b>${Number(hit.scores.keyword).toFixed(3)}</b></span>
+            <span>${retrievalText("vector")} <b>${Number(hit.scores.vector).toFixed(3)}</b></span>
+            <span>${retrievalText("hybrid")} <b>${Number(hit.scores.fusion).toFixed(3)}</b></span>
+            <span>${retrievalText("rerank")} <b>${Number(hit.scores.rerank).toFixed(3)}</b></span>
+          </div>
+          <p>${escapeHtml(hit.content).slice(0, 260)}</p>
+        </article>`).join("")}
+      </aside>
+    </div>`;
+  document.querySelector("#retrievalForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    retrievalMode = document.querySelector("#retrievalMode").value;
+    retrievalRerank = document.querySelector("#retrievalRerank").checked;
+    retrievalQuery = document.querySelector("#retrievalQuery").value.trim();
+    renderRecall(0, retrievalQuery);
+  });
+  insightWorkspace.querySelectorAll(".recall-row").forEach((button) => button.addEventListener("click", () => {
+    selectedRecallIndex = Number(button.dataset.index);
+    retrievalQuery = samples[selectedRecallIndex].question;
+    renderRecall(0, retrievalQuery);
+  }));
+}
+
+async function renderRecall(filterIndex = 0, queryOverride = "") {
+  const allSamples = recallSamples();
+  const samples = filterIndex === 1 ? allSamples.slice(0, 2) : filterIndex === 2 ? allSamples.slice(1, 3) : allSamples;
+  if (selectedRecallIndex >= samples.length) selectedRecallIndex = 0;
+  const selected = samples[selectedRecallIndex] || allSamples[0];
+  retrievalQuery = queryOverride || retrievalQuery || selected.question;
+  const requestVersion = ++retrievalRequestVersion;
+  renderRetrievalWorkspace(samples, selected, null, true);
+  try {
+    const response = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: retrievalQuery, mode: retrievalMode, rerank: retrievalRerank, limit: 5 }) });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || `Search failed: ${response.status}`);
+    if (requestVersion !== retrievalRequestVersion) return;
+    renderRetrievalWorkspace(samples, selected, payload.data);
+    renderTrace(payload.data.hits, Math.round((payload.data.hits[0]?.score || 0) * 100));
+  } catch (error) {
+    if (requestVersion !== retrievalRequestVersion) return;
+    renderRetrievalWorkspace(samples, selected, null, false, error.message);
+    renderTrace([], 0);
+  }
+}
+
 init();

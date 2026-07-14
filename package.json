@@ -1,0 +1,20 @@
+{
+  "name": "enterprise-knowledge-management-platform",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Enterprise knowledge management API and frontend demo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/audit-store.test.js tests/search-engine.test.js tests/enterprise-documents-store.test.js tests/dify-retrieval.test.js",
+    "migrate:documents": "node tools/migrate_documents_to_mysql_minio.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "minio": "8.0.7",
+    "mysql2": "3.22.6"
+  },
+  "packageManager": "pnpm@11.13.0"
+}

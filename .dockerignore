@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+!.env.example
+node_modules
+runtime
+storage/documents/*
+data/audit/*.jsonl
+data/search_index.json
+*.log
+Caddyfile
+docker-compose*.yml
+DOCUMENT_STORAGE.md
+DEPLOYMENT_DIFY.md

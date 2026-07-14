@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>后台管理 - 商品知识管理平台</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="admin-body">
+    <main class="admin-shell">
+      <section class="admin-login" id="loginPanel">
+        <div>
+          <h1>后台管理</h1>
+          <p>使用管理员账号登录后查看平台运行、权限和知识资产状态。</p>
+        </div>
+        <form id="loginForm" class="admin-login-form">
+          <label>
+            <span>账号</span>
+            <input id="usernameInput" name="username" autocomplete="username" value="admin" />
+          </label>
+          <label>
+            <span>密码</span>
+            <input id="passwordInput" name="password" type="password" autocomplete="current-password" value="admin123" />
+          </label>
+          <button type="submit">登录</button>
+          <p class="admin-error" id="loginError"></p>
+        </form>
+      </section>
+
+      <section class="admin-dashboard" id="dashboardPanel" hidden>
+        <header class="admin-topbar">
+          <div>
+            <h1>平台后台</h1>
+            <p id="adminUserLine">已登录</p>
+          </div>
+          <div class="admin-actions">
+            <a href="./documents.html">&#x6587;&#x6863;&#x4e2d;&#x5fc3;</a>
+            <a href="./operations.html">&#x5ba1;&#x8ba1;&#x4e0e;&#x8fd0;&#x8425;</a>
+            <a href="./index.html">返回前台</a>
+            <button id="logoutButton" type="button">退出</button>
+          </div>
+        </header>
+
+        <section class="admin-metrics" id="adminMetrics"></section>
+
+        <section class="admin-grid">
+          <article class="admin-card">
+            <h2>服务状态</h2>
+            <div id="serviceList" class="admin-list"></div>
+          </article>
+          <article class="admin-card">
+            <h2>角色权限</h2>
+            <div id="roleList" class="admin-list"></div>
+          </article>
+          <article class="admin-card">
+            <h2>待处理质量项</h2>
+            <div id="coverageList" class="admin-list"></div>
+          </article>
+          <article class="admin-card">
+            <h2>操作记录</h2>
+            <div id="actionList" class="admin-list"></div>
+          </article>
+        </section>
+      </section>
+    </main>
+    <script src="./admin.js"></script>
+  </body>
+</html>

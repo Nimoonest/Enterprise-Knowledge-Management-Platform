@@ -1,0 +1,148 @@
+services:
+  api:
+    image: ${EKMP_API_IMAGE:-ekmp-api:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    read_only: true
+    environment:
+      PORT: 5178
+      NODE_ENV: production
+      DIFY_EXTERNAL_KB_API_KEY: ${DIFY_EXTERNAL_KB_API_KEY:?DIFY_EXTERNAL_KB_API_KEY is required}
+      DIFY_EXTERNAL_KB_IDS: ${DIFY_EXTERNAL_KB_IDS:-ekmp-product-kb}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+      OPERATOR_USERNAME: ${OPERATOR_USERNAME:-operator}
+      OPERATOR_PASSWORD: ${OPERATOR_PASSWORD:?OPERATOR_PASSWORD is required}
+      DOCUMENT_METADATA_DRIVER: mysql
+      DOCUMENT_OBJECT_DRIVER: minio
+      DOCUMENT_MYSQL_HOST: mysql
+      DOCUMENT_MYSQL_PORT: 3306
+      DOCUMENT_MYSQL_USER: ekmp
+      DOCUMENT_MYSQL_PASSWORD: ${EKMP_MYSQL_PASSWORD:?EKMP_MYSQL_PASSWORD is required}
+      DOCUMENT_MYSQL_DATABASE: ekmp
+      DOCUMENT_MYSQL_CONNECTION_LIMIT: 10
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${EKMP_MINIO_ROOT_USER:?EKMP_MINIO_ROOT_USER is required}
+      MINIO_SECRET_KEY: ${EKMP_MINIO_ROOT_PASSWORD:?EKMP_MINIO_ROOT_PASSWORD is required}
+      MINIO_BUCKET: ekmp-documents
+      MINIO_REGION: us-east-1
+      SEARCH_INDEX_PATH: /app/runtime/search_index.json
+    expose:
+      - "5178"
+    volumes:
+      - ekmp_search_data:/app/runtime
+      - ekmp_audit_data:/app/data/audit
+    tmpfs:
+      - /tmp
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5178/api/health').then(r=>r.json()).then(x=>{if(x.data?.status!=='ok')process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - backend
+      - outbound
+
+  mysql:
+    image: mysql:8.4@sha256:c831a0f11348d402b43d77453e17d770be2eef356615a2823fe0f5a0d6c8b9af
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${EKMP_MYSQL_ROOT_PASSWORD:?EKMP_MYSQL_ROOT_PASSWORD is required}
+      MYSQL_DATABASE: ekmp
+      MYSQL_USER: ekmp
+      MYSQL_PASSWORD: ${EKMP_MYSQL_PASSWORD:?EKMP_MYSQL_PASSWORD is required}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    expose:
+      - "3306"
+    volumes:
+      - ekmp_mysql_data:/var/lib/mysql
+      - ./db/document_center_schema.sql:/docker-entrypoint-initdb.d/01-document-center.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - backend
+
+  minio:
+    image: quay.io/minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${EKMP_MINIO_ROOT_USER:?EKMP_MINIO_ROOT_USER is required}
+      MINIO_ROOT_PASSWORD: ${EKMP_MINIO_ROOT_PASSWORD:?EKMP_MINIO_ROOT_PASSWORD is required}
+    command: server /data
+    expose:
+      - "9000"
+    volumes:
+      - ekmp_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - backend
+
+  gateway:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    read_only: true
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ekmp_caddy_data:/data
+      - ekmp_caddy_config:/config
+    tmpfs:
+      - /tmp
+    expose:
+      - "8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - backend
+      - edge
+
+  cloudflared:
+    image: cloudflare/cloudflared@sha256:188bb03589a32affed3cf4d0590565ffe67b78866e6b5582574afab2b705bafe
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?CLOUDFLARE_TUNNEL_TOKEN is required}
+    depends_on:
+      gateway:
+        condition: service_healthy
+    networks:
+      - edge
+
+networks:
+  backend:
+    internal: true
+  edge:
+  outbound:
+
+volumes:
+  ekmp_mysql_data:
+  ekmp_minio_data:
+  ekmp_search_data:
+  ekmp_audit_data:
+  ekmp_caddy_data:
+  ekmp_caddy_config:

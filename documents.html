@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Center - Enterprise Knowledge Management</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./documents.css" />
+  </head>
+  <body class="admin-body">
+    <main class="document-shell">
+      <header class="document-header">
+        <div>
+          <p class="document-eyebrow">Knowledge asset management</p>
+          <h1>Document Center</h1>
+          <p>Manage document metadata, original files, and review status.</p>
+        </div>
+        <div class="admin-actions">
+          <a href="./admin.html">Platform overview</a>
+          <a href="./index.html">Frontend</a>
+          <button id="newDocumentButton" class="primary-action" type="button">New document</button>
+        </div>
+      </header>
+
+      <section class="document-toolbar" aria-label="Document filters">
+        <input id="documentSearch" type="search" placeholder="Search title, summary, category, or tag" />
+        <select id="categoryFilter"><option value="">All categories</option></select>
+        <select id="tagFilter"><option value="">All tags</option></select>
+        <select id="statusFilter">
+          <option value="">All statuses</option>
+          <option value="draft">Draft</option>
+          <option value="pending_review">Pending review</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </section>
+
+      <div class="document-layout">
+        <section class="document-list-panel">
+          <div class="document-section-head">
+            <h2>Documents</h2>
+            <span id="documentCount">0 ?</span>
+          </div>
+          <div id="documentList" class="document-list"></div>
+        </section>
+
+        <aside class="document-detail-panel" id="documentDetail">
+          <div class="document-empty">Select a document to view details</div>
+        </aside>
+      </div>
+    </main>
+
+    <dialog id="documentDialog" class="document-dialog">
+      <form id="documentForm" method="dialog">
+        <div class="document-dialog-head">
+          <div>
+            <p class="document-eyebrow">Document information</p>
+            <h2 id="documentFormTitle">New document</h2>
+          </div>
+          <button id="closeDocumentDialog" class="icon-button" type="button" aria-label="Close">x</button>
+        </div>
+        <input id="documentId" type="hidden" />
+        <label>Title<input id="documentTitle" required maxlength="120" /></label>
+        <label>Summary<textarea id="documentSummary" rows="4" maxlength="1000"></textarea></label>
+        <div class="document-form-grid">
+          <label>Category<input id="documentCategory" list="categoryOptions" maxlength="50" /></label>
+          <label>Review status
+            <select id="documentStatus">
+              <option value="draft">Draft</option>
+              <option value="pending_review">Pending review</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </label>
+        </div>
+        <datalist id="categoryOptions"></datalist>
+        <label>Tags<input id="documentTags" placeholder="Separate multiple tags with commas" /></label>
+        <label>Local file (20 MB maximum)<input id="documentFile" type="file" /></label>
+        <p class="document-form-note">Files persist under storage/documents after process restarts.</p>
+        <p class="admin-error" id="documentFormError"></p>
+        <div class="document-form-actions">
+          <button id="cancelDocumentButton" type="button">Cancel</button>
+          <button class="primary-action" type="submit">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <script src="./documents.js"></script>
+  </body>
+</html>

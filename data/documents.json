@@ -1,0 +1,73 @@
+[
+  {
+    "id": "doc-company-handbook",
+    "title": "公司员工手册",
+    "summary": "公司制度、办公规范和员工日常流程说明。",
+    "category": "公司制度",
+    "tags": [
+      "员工手册",
+      "制度"
+    ],
+    "review_status": "approved",
+    "created_by": "system",
+    "created_at": "2026-07-10T00:00:00.000Z",
+    "updated_at": "2026-07-10T00:00:00.000Z",
+    "file": null
+  },
+  {
+    "id": "doc-ops-runbook",
+    "title": "平台运维手册",
+    "summary": "知识管理平台的启动、检查和故障处理记录。",
+    "category": "运维文档",
+    "tags": [
+      "运维",
+      "平台"
+    ],
+    "review_status": "pending_review",
+    "created_by": "system",
+    "created_at": "2026-07-10T00:00:00.000Z",
+    "updated_at": "2026-07-10T00:00:00.000Z",
+    "file": null
+  },
+  {
+    "id": "8a4b21c9-f042-4ccf-8e36-e66ea03cd9a0",
+    "title": "Local persistence verification",
+    "summary": "Created by automated persistence test",
+    "category": "System test",
+    "tags": [
+      "local",
+      "persistence"
+    ],
+    "review_status": "pending_review",
+    "created_by": "admin",
+    "created_at": "2026-07-10T02:13:26.349Z",
+    "updated_at": "2026-07-10T02:13:26.366Z",
+    "file": {
+      "name": "persistence-check.txt",
+      "stored_name": "1783649606365-persistence-check.txt",
+      "type": "text/plain",
+      "size": 37,
+      "uploaded_at": "2026-07-10T02:13:26.366Z"
+    },
+    "updated_by": "admin"
+  },
+  {
+    "id": "d6e70ef5-fa9c-489f-aa74-07a7d9b5e9c5",
+    "title": "产品信息",
+    "summary": "",
+    "category": "未分类",
+    "tags": [],
+    "review_status": "approved",
+    "created_by": "admin",
+    "created_at": "2026-07-10T02:33:31.627Z",
+    "updated_at": "2026-07-10T02:35:04.196Z",
+    "file": {
+      "name": "products_v2.xlsx",
+      "stored_name": "1783650811640-products_v2.xlsx",
+      "type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "size": 276288,
+      "uploaded_at": "2026-07-10T02:33:31.641Z"
+    },
+    "updated_by": "admin"
+  }
+]

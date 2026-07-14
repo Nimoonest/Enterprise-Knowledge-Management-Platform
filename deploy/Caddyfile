@@ -1,0 +1,16 @@
+:8080 {
+	log {
+		output stdout
+		format json
+	}
+
+	route {
+		@dify_retrieval {
+			method POST
+			path /api/dify/retrieval
+		}
+
+		reverse_proxy @dify_retrieval api:5178
+		respond 404
+	}
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audit & Operations - Enterprise Knowledge Management</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./operations.css" />
+  </head>
+  <body class="admin-body">
+    <main class="ops-shell">
+      <header class="ops-header">
+        <div>
+          <p class="ops-eyebrow" id="opsEyebrow">Operations</p>
+          <h1 id="opsTitle">Audit & Operations</h1>
+          <p id="opsUser">Authenticated session</p>
+        </div>
+        <div class="ops-header-actions">
+          <select id="periodSelect" aria-label="Statistics period">
+            <option value="7">7 days</option>
+            <option value="30">30 days</option>
+            <option value="90">90 days</option>
+          </select>
+          <button id="refreshButton" type="button">Refresh</button>
+          <a href="./admin.html">Platform</a>
+          <a href="./documents.html">Documents</a>
+        </div>
+      </header>
+
+      <section class="ops-metrics" id="opsMetrics"></section>
+
+      <section class="ops-analysis-grid">
+        <article class="ops-panel ops-trend-panel">
+          <div class="ops-panel-head"><h2 id="trendTitle">Daily trend</h2><span id="trendLegend"></span></div>
+          <div class="ops-trend" id="dailyTrend"></div>
+        </article>
+        <article class="ops-panel">
+          <div class="ops-panel-head"><h2 id="qualityTitle">Quality distribution</h2></div>
+          <div class="ops-distribution" id="qualityDistribution"></div>
+        </article>
+        <article class="ops-panel">
+          <div class="ops-panel-head"><h2 id="channelTitle">Interaction channels</h2></div>
+          <div class="ops-distribution" id="channelDistribution"></div>
+        </article>
+        <article class="ops-panel">
+          <div class="ops-panel-head"><h2 id="queryTitle">Top queries</h2></div>
+          <div class="ops-query-list" id="topQueries"></div>
+        </article>
+      </section>
+
+      <section class="ops-log-section">
+        <div class="ops-log-toolbar">
+          <div class="ops-tabs" role="tablist">
+            <button class="active" id="operationsTab" data-tab="operations" type="button">Operations</button>
+            <button id="interactionsTab" data-tab="interactions" type="button">Q&A logs</button>
+          </div>
+          <div class="ops-filters">
+            <input id="logSearch" type="search" placeholder="Search logs" />
+            <select id="logStatus"><option value="">All statuses</option><option value="success">Success</option><option value="failed">Failed</option></select>
+            <select id="interactionType" hidden><option value="">All interactions</option><option value="search">Search</option><option value="chat">Chat</option></select>
+          </div>
+        </div>
+        <div class="ops-table" id="logTable"></div>
+        <div class="ops-pagination">
+          <button id="previousPage" type="button">Previous</button>
+          <span id="pageStatus">1 / 1</span>
+          <button id="nextPage" type="button">Next</button>
+        </div>
+      </section>
+    </main>
+    <script src="./operations.js"></script>
+  </body>
+</html>

@@ -1,0 +1,102 @@
+.retrieval-controls {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(150px, 210px) auto auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.retrieval-controls label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.retrieval-controls input,
+.retrieval-controls select {
+  min-width: 0;
+  border: 1px solid #cdd7e6;
+  border-radius: 6px;
+  padding: 10px;
+  color: var(--text);
+  background: #fff;
+}
+
+.retrieval-controls button {
+  height: 38px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 16px;
+  color: #fff;
+  background: var(--blue);
+  font-weight: 800;
+}
+
+.retrieval-controls .retrieval-toggle {
+  display: flex;
+  min-height: 38px;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+}
+
+.retrieval-toggle input {
+  width: 16px;
+  height: 16px;
+}
+
+.retrieval-hit {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.retrieval-hit p {
+  margin: 10px 0 0;
+  color: #46546a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.retrieval-score-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.retrieval-score-grid span {
+  padding: 6px;
+  border: 1px solid #d8e1ed;
+  border-radius: 6px;
+  color: var(--muted);
+  background: #fff;
+  font-size: 11px;
+}
+
+.retrieval-score-grid b {
+  display: block;
+  margin-top: 3px;
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .retrieval-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .retrieval-controls > label:first-child {
+    grid-column: 1 / 3;
+  }
+
+  .retrieval-score-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
